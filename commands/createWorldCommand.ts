@@ -3,7 +3,7 @@ import { FormButton, SimpleForm } from "bdsx/bds/form";
 import { ServerPlayer } from "bdsx/bds/player";
 import { command } from "bdsx/command";
 import { SystemLog, SystemLogType } from "../util/system";
-import { World, WorldData, WorldType } from "../util/world";
+import { World, WorldData, WorldType, levels } from "../util/world";
 
 SystemLog(`Registering createworld command`, SystemLogType.DEBUG);
 
@@ -22,6 +22,7 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
                 const w = new World();
                 w.info = new WorldData('HelloWorld', WorldType.FLAT);
                 w.startWorld();
+                levels.push(w);
                 break;
             case "sfw":
                 break;

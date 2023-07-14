@@ -5,22 +5,52 @@ import { SystemLog, SystemLogType } from "./system";
 //import { v4 as uuid } from "uuid";
 import { join } from "path";
 import { cwd } from "process";
+import { events } from "bdsx/event";
+
+events.command.on((command, originName, ctx)=>{
+    if(command == '/stop') {
+        for(let i = 0; i < levels.length; i++){
+            let bo = levels[i].stopWorld();
+            bo.then((val)=>{
+                if(!val) return;
+                SystemLog("stoped", SystemLogType.DEBUG);
+            })
+        }
+        return -1;
+    }
+});
+
+export let levels: World[] = [];
 
 export class World {
     bat: ChildProcessWithoutNullStreams;
     info: WorldData; //properties and also nbt data
+    running: boolean = false;
+    interval: ReturnType<typeof setInterval>;
 
     //constructor(levelName: string, )
 
-    stopWorld(): boolean {
-        if(!this.bat) return SystemLog(`Cannot stop world ${this.info.levelName} (ID of ${this.info.levelID}) because world is not running.`);
-        return this.bat.stdin.write(`stop\n`);
+    async stopWorld(): Promise<boolean> {
+        if(!this.running) return SystemLog(`Cannot stop world ${this.info.levelName} (ID of ${this.info.levelID}) because world is not running.`);
+        this.bat.stdin.write(`worldstop\n`);
+        return await this.checkIsRunning();
+    }
+
+    //TODO: This runs forever so it needs fixed
+    async checkIsRunning(): Promise<boolean> {
+        if(this.running) {
+            if(!this.interval) this.interval = setInterval(this.checkIsRunning, 1000);
+            return false;
+        }
+        clearInterval(this.interval);
+        SystemLog("stoped world", SystemLogType.DEBUG);
+        return true;
     }
 
     startWorld(): boolean {
         if(this.bat) return SystemLog(`Cannot start world ${this.info.levelName} (ID of ${this.info.levelID}) because world is already running.`);
         this.bat = spawn('cmd.exe', ['/c',`${join(cwd(), '..')}/bdsx.bat`]);
-
+        this.running = true;
         this.bat.stderr.on("data", (data) => {
             SystemLog(`[${this.info.levelName.magenta}/${this.info.levelID.magenta}] ` + data.toString().red);
         })
@@ -29,6 +59,7 @@ export class World {
         })
         this.bat.on('close', (code) => {
             SystemLog(`[${this.info.levelName.magenta}/${this.info.levelID.magenta}] World closed with exit code ` + code);
+            this.running = false;
         })
 
         return (this.bat == null);
