@@ -18,5 +18,8 @@
     "@typescript-eslint/parser": "^5.48.1",
     "bdsx": "file:../bdsx",
     "eslint": "^8.31.0"
+  },
+  "dependencies": {
+    "uuid": "^9.0.0"
   }
 }

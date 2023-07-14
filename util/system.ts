@@ -11,16 +11,16 @@ export enum SystemLogType {
 export function SystemLog(message: string, messageType: SystemLogType = SystemLogType.LOG): boolean {
     switch(messageType) {
         case SystemLogType.LOG:
-            console.log(`[` + config.PluginName.green + `] ` + message);
+            console.log(`[${config.PluginName.green}] ` + message);
             return true;
         case SystemLogType.WARN:
-            console.warn(`[` + config.PluginName.green + `] ` + message.yellow);
+            console.warn(`[${config.PluginName.green}] ` + message.yellow);
             return true;
         case SystemLogType.ERROR:
-            console.error(`[` + config.PluginName.green + `] ` + message.red);
+            console.error(`[${config.PluginName.green}] ` + message.red);
             return false;
         case SystemLogType.INFO:
-            console.info(`[` + config.PluginName.green + `] ` + message.cyan);
+            console.info(`[${config.PluginName.green}] ` + message.cyan);
             return true;
         case SystemLogType.DEBUG:
             console.debug(`[` + config.PluginName.green + `] ` + message.grey);

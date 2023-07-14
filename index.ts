@@ -1,9 +1,19 @@
 
 import { events } from "bdsx/event";
 import { command } from "bdsx/command"
-import { ServerPlayer } from "bdsx/bds/player";
+import { Player, ServerPlayer, SimulatedPlayer } from "bdsx/bds/player";
 import { ChildProcessWithoutNullStreams, spawn } from "child_process"
 import { SystemLog, SystemLogType } from "./util/system";
+
+declare module 'bdsx/bds/player' {
+    interface Player {
+        m(): string;
+    }
+}
+
+Player.prototype.m = function()  {
+    return "test"
+}
 
 SystemLog("Plugin Allocated", SystemLogType.LOG)
 
