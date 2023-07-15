@@ -13,9 +13,9 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
     const player: ServerPlayer = <ServerPlayer>origin.getEntity();
     SystemLog(player.m(), SystemLogType.DEBUG);
     const form = new SimpleForm("CreateWorld");
-    form.addButton(new FormButton("New World", "path", "../data/grass.png"), "w")
-    form.addButton(new FormButton("New Super Flat World", "path", "../data/grass.png"), "sfw")
-    form.addButton(new FormButton("New Void World", "path", "../data/grass.png"), "vw")
+    form.addButton(new FormButton("New World", "url", "https://raw.githubusercontent.com/MisledWater79/ExtraWorlds/main/data/grass.png"), "w")
+    form.addButton(new FormButton("New Super Flat World", "url", "https://raw.githubusercontent.com/MisledWater79/ExtraWorlds/main/data/dirt.png"), "sfw")
+    form.addButton(new FormButton("New Void World", "url", "https://raw.githubusercontent.com/MisledWater79/ExtraWorlds/main/data/bedrock.png"), "vw")
     form.sendTo(player.getNetworkIdentifier(), (form, net) => {
         switch(form.response) {
             case "w":
