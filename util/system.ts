@@ -10,20 +10,21 @@ export enum SystemLogType {
 
 export function SystemLog(message: string, messageType: SystemLogType = SystemLogType.LOG): boolean {
     switch(messageType) {
-        case SystemLogType.LOG:
+        case 0:
             console.log(`[${config.PluginName.green}] ` + message);
             return true;
-        case SystemLogType.WARN:
+        case 1:
             console.warn(`[${config.PluginName.green}] ` + message.yellow);
             return true;
-        case SystemLogType.ERROR:
+        case 2:
             console.error(`[${config.PluginName.green}] ` + message.red);
             return false;
-        case SystemLogType.INFO:
+        case 3:
             console.info(`[${config.PluginName.green}] ` + message.cyan);
             return true;
-        case SystemLogType.DEBUG:
+        case 4:
             console.debug(`[` + config.PluginName.green + `] ` + message.grey);
             return true;
     }
+    return false;
 }
