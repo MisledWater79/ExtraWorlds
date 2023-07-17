@@ -2,9 +2,13 @@
 import { events } from "bdsx/event";
 import { command } from "bdsx/command"
 import { Player, ServerPlayer } from "bdsx/bds/player";
-import { ChildProcessWithoutNullStreams } from "child_process"
 import { SystemLog, SystemLogType } from "./util/system";
-import { bedrockServer } from "bdsx/launcher";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { serverProperties } from "bdsx/serverproperties";
+import { World, WorldData, WorldType, levels, runningWorlds, takenPortv4 } from "./util/world";
+
+export let isMainFile: boolean;
+export let ServerData = {};
 
 declare module 'bdsx/bds/player' {
     interface Player {
@@ -18,19 +22,42 @@ Player.prototype.m = function()  {
 
 SystemLog("Plugin Allocated", SystemLogType.LOG);
 
-let bat: ChildProcessWithoutNullStreams;
-
 events.serverOpen.on(()=>{
     SystemLog("Plugin Starting", SystemLogType.WARN);
+
+    //Load plugin data
+    if(!existsSync('ExtraWorlds/extraworlds.properties')) {
+        mkdirSync('ExtraWorlds');
+        writeFileSync('ExtraWorlds/extraworlds.properties','#Tells the plugin if it\'s a main plugin or a non-main plugin\nmainInstanceRunning=true');
+        isMainFile = true;
+    } else {
+        let data = readFileSync('ExtraWorlds/extraworlds.properties');
+        if(data.includes('mainInstanceRunning=true')) isMainFile = false;
+        else if(data.includes('mainInstanceRunning=false')) {
+            isMainFile = true;
+            writeFileSync('ExtraWorlds/extraworlds.properties', data.toString().replace('mainInstanceRunning=false', 'mainInstanceRunning=true'))
+        } else {
+            SystemLog('Extraworld.properties file has no "mainInstanceRunning" property. Contact developer about this error.', SystemLogType.ERROR);
+        }
+    }
+
+    //Save backup server data
+    let data = readFileSync('server.properties');
+    writeFileSync('ExtraWorlds/serverPropBackup.properties', data);
+    takenPortv4.push(Number(serverProperties["server-port"]));
+
+    const w = new World();
+    w.running = true;
+    w.info = new WorldData(serverProperties['level-name'], WorldType.INFINITE);
+    levels.push(w);
+
+    SystemLog(`Plugin is main: ${isMainFile}`, SystemLogType.WARN);
 
     require('./commands/commandRegistry');
     command.register("transfer","ee").overload((param, origin, output) => {
         if(origin.isServerCommandOrigin()) return;
         const player: ServerPlayer = <ServerPlayer>origin.getEntity();
         player.transferServer("127.0.0.1", 19134);
-    },{})
-    command.register("worldstop","ee").overload((param, origin, output) => {
-        bedrockServer.stop();
     },{})
 });
 

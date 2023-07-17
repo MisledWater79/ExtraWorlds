@@ -2,25 +2,56 @@
 //world class with everything to generate it and run it, then will be saved to a list here
 import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { SystemLog, SystemLogType } from "./system";
-//import { v4 as uuid } from "uuid";
 import { join } from "path";
 import { cwd } from "process";
 import { events } from "bdsx/event";
+import { isMainFile } from "..";
+import { readFileSync, writeFileSync } from "fs";
+import { serverProperties } from "bdsx/serverproperties";
 
+//Overrides the stop command to wait till all instances are closed
+//still need to figure out how to detect when to truly stop
 events.command.on((command, originName, ctx)=>{
+    if(!isMainFile) return;
     if(command == '/stop') {
         for(let i = 0; i < levels.length; i++){
+            if(!levels[i].running) continue;
             let bo = levels[i].stopWorld();
             bo.then((val)=>{
                 if(!val) return;
                 SystemLog("stoped", SystemLogType.DEBUG);
             })
         }
-        return -1;
+        let data = readFileSync('ExtraWorlds/extraworlds.properties');
+        writeFileSync('ExtraWorlds/extraworlds.properties', data.toString().replace('mainInstanceRunning=true', 'mainInstanceRunning=false'))
+        data = readFileSync('ExtraWorlds/serverPropBackup.properties');
+        writeFileSync('server.properties', data);
+        if(running) return -1;
     }
 });
 
+export let running: boolean = true;
 export let levels: World[] = [];
+export let takenPortv4: number[] = [];
+export let runningWorlds: number = 1;
+
+export function getNextPortv4(): number {
+    let found = false;
+    let port = 19132;
+    while(!found) {
+        if(takenPortv4.includes(port)) port += 2;
+        else found = true;
+    };
+    return port;
+}
+
+export function isWorldRunning(name: string): boolean {
+    let val = false;
+    levels.forEach((world) => {
+        if(world.info.levelName == name && world.running) val = true;
+    })
+    return val;
+}
 
 export class World {
     bat: ChildProcessWithoutNullStreams;
@@ -31,8 +62,8 @@ export class World {
     //constructor(levelName: string, )
 
     async stopWorld(): Promise<boolean> {
-        if(!this.running) return SystemLog(`Cannot stop world ${this.info.levelName} (ID of ${this.info.levelID}) because world is not running.`);
-        this.bat.stdin.write(`worldstop\n`);
+        if(!this.running) return SystemLog(`Cannot stop world ${this.info.levelName} because world is not running.`);
+        this.bat.stdin.write(`stop\n`);
         return await this.checkIsRunning();
     }
 
@@ -48,28 +79,53 @@ export class World {
     }
 
     startWorld(): boolean {
-        if(this.bat) return SystemLog(`Cannot start world ${this.info.levelName} (ID of ${this.info.levelID}) because world is already running.`);
+        if(this.bat || this.info.levelName == serverProperties['level-name'] || isWorldRunning(this.info.levelName)) return SystemLog(`Cannot start world ${this.info.levelName} because world is already running.`);
+
+        if(takenPortv4.includes(this.info.portv4)) {
+            let newPort = getNextPortv4();
+            SystemLog(`Port ${this.info.portv4} is taken changing to ${newPort}`, SystemLogType.ERROR);
+            this.info.portv4 = newPort;
+            this.info.portv6 = newPort++;
+            takenPortv4.push(newPort);
+        }
+
+        writeFileSync('server.properties', this.setWorldData());
+
         this.bat = spawn('cmd.exe', ['/c',`${join(cwd(), '..')}/bdsx.bat`]);
         this.running = true;
+        runningWorlds++;
         this.bat.stderr.on("data", (data) => {
-            SystemLog(`[${this.info.levelName.magenta}/${this.info.levelID.magenta}] ` + data.toString().red);
+            data.toString().split('\n').forEach((str: string) => {
+                SystemLog(`[${this.info.levelName.magenta}] ` + str.red);
+            })
         })
         this.bat.stdout.on("data", (data) => {
-            SystemLog(`[${this.info.levelName.magenta}/${this.info.levelID.magenta}] ` + data.toString().cyan);
+            data.toString().split('\n').forEach((str: string) => {
+                SystemLog(`[${this.info.levelName.magenta}] ` + str.cyan);
+            })
         })
         this.bat.on('close', (code) => {
-            SystemLog(`[${this.info.levelName.magenta}/${this.info.levelID.magenta}] World closed with exit code ` + code);
+            SystemLog(`[${this.info.levelName.magenta}] World closed with exit code ` + code);
             this.running = false;
+            runningWorlds--;
         })
 
         return (this.bat == null);
+    }
+
+    setWorldData() {
+        let data = readFileSync('ExtraWorlds/serverPropBackup.properties').toString();
+        data = data.replace(`level-name=${serverProperties["level-name"]}`, `level-name=${this.info.levelName}`);
+        data = data.replace(`server-port=${serverProperties["server-port"]}`, `server-port=${this.info.portv4}`);
+        data = data.replace(`server-portv6=${serverProperties["server-portv6"]}`, `server-portv6=${this.info.portv6}`);
+        data += `level-type=${this.info.levelType}`;
+        return data;
     }
 }
 
 export class WorldData {
     //WORLD INFO
     levelName: string = "";
-    levelID: string;
     levelType: number = 1; //0=OLD 1=INFINITE 2=FLAT
     levelSeed: number;
     levelIP: string;
@@ -135,9 +191,8 @@ export class WorldData {
     experimentalCameras: boolean = false;
     educationEdition: boolean = false;
 
-    constructor(levelName: string, levelType: WorldType, levelSeed: number = 0, levelLayers: WorldLayers = new WorldLayers(), levelIP: string = '', portv4: number = 0 /*getNextPortv4()*/, portv6: number = 0 /*getNextPortv6()*/) {
+    constructor(levelName: string, levelType: WorldType, levelSeed: number = 0, levelLayers: WorldLayers = new WorldLayers(), levelIP: string = '', portv4: number = getNextPortv4(), portv6: number = getNextPortv4() + 1) {
         this.levelName = levelName;
-        this.levelID = "1939042";
         this.levelType = levelType;
         this.levelSeed = levelSeed;
         this.levelLayers = levelLayers;
