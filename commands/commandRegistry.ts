@@ -1,4 +1,8 @@
 //World Commands
+import { isMainFile } from "../index.js";
 import { SystemLog, SystemLogType } from "../util/system.js";
 SystemLog(`Registering Commands...`, SystemLogType.WARN);
-require("./createWorldCommand");
+
+if(isMainFile) {
+    require("./createWorldCommand");
+}

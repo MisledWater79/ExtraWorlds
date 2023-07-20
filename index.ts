@@ -62,9 +62,6 @@ events.serverOpen.on(()=>{
         const player: ServerPlayer = <ServerPlayer>origin.getEntity();
         player.transferServer("127.0.0.1", 19134);
     },{})
-    command.register("s","ee").overload((param, origin, output) => {
-        bedrockServer.stop();
-    },{})
 });
 
 events.serverClose.on(()=>{

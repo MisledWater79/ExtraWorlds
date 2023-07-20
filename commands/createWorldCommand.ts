@@ -31,10 +31,3 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
         }
     })
 },{})
-command.register("c", "Creates a brand new world!", CommandPermissionLevel.Host)
-.overload((param, origin, output) => {
-    const w = new World();
-    w.info = new WorldData('HelloWorld', WorldType.FLAT);
-    w.startWorld();
-    levels.push(w);
-},{})
