@@ -6,6 +6,7 @@ import { SystemLog, SystemLogType } from "./util/system";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { serverProperties } from "bdsx/serverproperties";
 import { World, WorldData, WorldType, levels, runningWorlds, takenPortv4 } from "./util/world";
+import { bedrockServer } from "bdsx/launcher";
 
 export let isMainFile: boolean;
 export let ServerData = {};
@@ -42,14 +43,16 @@ events.serverOpen.on(()=>{
     }
 
     //Save backup server data
-    let data = readFileSync('server.properties');
-    writeFileSync('ExtraWorlds/serverPropBackup.properties', data);
-    takenPortv4.push(Number(serverProperties["server-port"]));
-
-    const w = new World();
-    w.running = true;
-    w.info = new WorldData(serverProperties['level-name'], WorldType.INFINITE);
-    levels.push(w);
+    if(isMainFile) {
+        let data = readFileSync('server.properties');
+        writeFileSync('ExtraWorlds/serverPropBackup.properties', data);
+        takenPortv4.push(Number(serverProperties["server-port"]));
+        const w = new World();
+        w.running = true;
+        w.skip = true;
+        w.info = new WorldData(serverProperties['level-name'], WorldType.INFINITE);
+        levels.push(w);
+    }
 
     SystemLog(`Plugin is main: ${isMainFile}`, SystemLogType.WARN);
 
@@ -58,6 +61,9 @@ events.serverOpen.on(()=>{
         if(origin.isServerCommandOrigin()) return;
         const player: ServerPlayer = <ServerPlayer>origin.getEntity();
         player.transferServer("127.0.0.1", 19134);
+    },{})
+    command.register("s","ee").overload((param, origin, output) => {
+        bedrockServer.stop();
     },{})
 });
 

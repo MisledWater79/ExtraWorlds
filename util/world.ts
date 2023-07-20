@@ -8,29 +8,30 @@ import { events } from "bdsx/event";
 import { isMainFile } from "..";
 import { readFileSync, writeFileSync } from "fs";
 import { serverProperties } from "bdsx/serverproperties";
+import { bedrockServer } from "bdsx/launcher";
+
+async function stopWorlds(): Promise<void> {
+    for(let i = 0; i < levels.length; i++){
+        if(!levels[i].running || levels[i].skip) continue;
+        await levels[i].stopWorld();
+    }
+}
 
 //Overrides the stop command to wait till all instances are closed
-//still need to figure out how to detect when to truly stop
 events.command.on((command, originName, ctx)=>{
     if(!isMainFile) return;
     if(command == '/stop') {
-        for(let i = 0; i < levels.length; i++){
-            if(!levels[i].running) continue;
-            let bo = levels[i].stopWorld();
-            bo.then((val)=>{
-                if(!val) return;
-                SystemLog("stoped", SystemLogType.DEBUG);
-            })
-        }
-        let data = readFileSync('ExtraWorlds/extraworlds.properties');
-        writeFileSync('ExtraWorlds/extraworlds.properties', data.toString().replace('mainInstanceRunning=true', 'mainInstanceRunning=false'))
-        data = readFileSync('ExtraWorlds/serverPropBackup.properties');
-        writeFileSync('server.properties', data);
-        if(running) return -1;
+        stopWorlds().then(()=>{
+            let data = readFileSync('ExtraWorlds/extraworlds.properties');
+            writeFileSync('ExtraWorlds/extraworlds.properties', data.toString().replace('mainInstanceRunning=true', 'mainInstanceRunning=false'))
+            data = readFileSync('ExtraWorlds/serverPropBackup.properties');
+            writeFileSync('server.properties', data);
+            bedrockServer.stop();
+        });
+        return -1;
     }
 });
 
-export let running: boolean = true;
 export let levels: World[] = [];
 export let takenPortv4: number[] = [];
 export let runningWorlds: number = 1;
@@ -58,24 +59,28 @@ export class World {
     info: WorldData; //properties and also nbt data
     running: boolean = false;
     interval: ReturnType<typeof setInterval>;
+    skip: boolean = false;
 
     //constructor(levelName: string, )
 
-    async stopWorld(): Promise<boolean> {
-        if(!this.running) return SystemLog(`Cannot stop world ${this.info.levelName} because world is not running.`);
-        this.bat.stdin.write(`stop\n`);
-        return await this.checkIsRunning();
+    async stopWorld(): Promise<void> {
+        if(!this.running) {
+            SystemLog(`Cannot stop world ${this.info.levelName} because world is not running.`);
+        } else {
+            this.bat.stdin.write(`stop\n`);
+            await this.waitForStop();
+        }
     }
 
-    //TODO: This runs forever so it needs fixed
-    async checkIsRunning(): Promise<boolean> {
-        if(this.running) {
-            if(!this.interval) this.interval = setInterval(this.checkIsRunning, 1000);
-            return false;
-        }
-        clearInterval(this.interval);
-        SystemLog("stoped world", SystemLogType.DEBUG);
-        return true;
+    private waitForStop(): Promise<void> {
+        return new Promise((resolve) => {
+            this.bat.on('close', (code) => {
+                SystemLog(`[${this.info.levelName.magenta}] World closed with exit code ` + code);
+                this.running = false;
+                runningWorlds--;
+                resolve();
+            });
+        });
     }
 
     startWorld(): boolean {
@@ -103,11 +108,6 @@ export class World {
             data.toString().split('\n').forEach((str: string) => {
                 SystemLog(`[${this.info.levelName.magenta}] ` + str.cyan);
             })
-        })
-        this.bat.on('close', (code) => {
-            SystemLog(`[${this.info.levelName.magenta}] World closed with exit code ` + code);
-            this.running = false;
-            runningWorlds--;
         })
 
         return (this.bat == null);
