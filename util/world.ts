@@ -63,6 +63,43 @@ export class World {
 
     //constructor(levelName: string, )
 
+    async startWorld(): Promise<void> {
+        if(this.bat || this.info.levelName == serverProperties['level-name'] || isWorldRunning(this.info.levelName)) {
+            SystemLog(`Cannot start world ${this.info.levelName} because world is already running.`);
+        } else {
+            if(takenPortv4.includes(this.info.portv4)) {
+                let newPort = getNextPortv4();
+                SystemLog(`Port ${this.info.portv4} is taken changing to ${newPort}`, SystemLogType.ERROR);
+                this.info.portv4 = newPort;
+                this.info.portv6 = newPort++;
+                takenPortv4.push(newPort);
+            }
+
+            writeFileSync('server.properties', this.setWorldData());
+
+            this.bat = spawn('cmd.exe', ['/c',`${join(cwd(), '..')}/bdsx.bat`]);
+
+            //plugins
+            this.bat.stderr.on("data", (data) => {
+                data = data.toString().split('\n');
+                data.pop();
+                data.forEach((str: string, index: number) => {
+                    SystemLog(`[${this.info.levelName.magenta}] ` + str, SystemLogType.OTHER);
+                });
+            });
+            //bds
+            this.bat.stdout.on("data", (data) => {
+                data = data.toString().split('\n');
+                data.pop();
+                data.forEach((str: string) => {
+                    SystemLog(`[${this.info.levelName.magenta}] ` + str, SystemLogType.OTHER);
+                });
+            });
+
+            await this.waitForStart();
+        }
+    }
+
     async stopWorld(): Promise<void> {
         if(!this.running) {
             SystemLog(`Cannot stop world ${this.info.levelName} because world is not running.`);
@@ -83,34 +120,17 @@ export class World {
         });
     }
 
-    startWorld(): boolean {
-        if(this.bat || this.info.levelName == serverProperties['level-name'] || isWorldRunning(this.info.levelName)) return SystemLog(`Cannot start world ${this.info.levelName} because world is already running.`);
-
-        if(takenPortv4.includes(this.info.portv4)) {
-            let newPort = getNextPortv4();
-            SystemLog(`Port ${this.info.portv4} is taken changing to ${newPort}`, SystemLogType.ERROR);
-            this.info.portv4 = newPort;
-            this.info.portv6 = newPort++;
-            takenPortv4.push(newPort);
-        }
-
-        writeFileSync('server.properties', this.setWorldData());
-
-        this.bat = spawn('cmd.exe', ['/c',`${join(cwd(), '..')}/bdsx.bat`]);
-        this.running = true;
-        runningWorlds++;
-        this.bat.stderr.on("data", (data) => {
-            data.toString().split('\n').forEach((str: string) => {
-                SystemLog(`[${this.info.levelName.magenta}] ` + str.red);
+    private waitForStart(): Promise<void> {
+        return new Promise((resolve) => {
+            this.bat.stdout.on('data', (data) => {
+                if(data.toString().includes('Server started')) {
+                    SystemLog(`Started world ${this.info.levelName}`, SystemLogType.LOG);
+                    this.running = true;
+                    runningWorlds++;
+                    resolve();
+                }
             })
         })
-        this.bat.stdout.on("data", (data) => {
-            data.toString().split('\n').forEach((str: string) => {
-                SystemLog(`[${this.info.levelName.magenta}] ` + str.cyan);
-            })
-        })
-
-        return (this.bat == null);
     }
 
     setWorldData() {
@@ -118,7 +138,7 @@ export class World {
         data = data.replace(`level-name=${serverProperties["level-name"]}`, `level-name=${this.info.levelName}`);
         data = data.replace(`server-port=${serverProperties["server-port"]}`, `server-port=${this.info.portv4}`);
         data = data.replace(`server-portv6=${serverProperties["server-portv6"]}`, `server-portv6=${this.info.portv6}`);
-        data += `level-type=${this.info.levelType}`;
+        data += `level-type=FLAT`;
         return data;
     }
 }
@@ -126,9 +146,9 @@ export class World {
 export class WorldData {
     //WORLD INFO
     levelName: string = "";
-    levelType: number = 1; //0=OLD 1=INFINITE 2=FLAT
+    levelType: string = WorldType[1]; //0=LEGACY 1=DEFAULT 2=FLAT
     levelSeed: number;
-    levelIP: string;
+    levelIP: string; //Not needed since it will run on whatever ip specified in propeties
     portv4: number; //set to our default port +2*WorldProccesses
     portv6: number;
     levelLayers: WorldLayers = new WorldLayers();
@@ -193,7 +213,7 @@ export class WorldData {
 
     constructor(levelName: string, levelType: WorldType, levelSeed: number = 0, levelLayers: WorldLayers = new WorldLayers(), levelIP: string = '', portv4: number = getNextPortv4(), portv6: number = getNextPortv4() + 1) {
         this.levelName = levelName;
-        this.levelType = levelType;
+        this.levelType = WorldType[levelType];
         this.levelSeed = levelSeed;
         this.levelLayers = levelLayers;
         this.levelIP = levelIP;
@@ -203,8 +223,8 @@ export class WorldData {
 }
 
 export enum WorldType {
-    OLD = 0,
-    INFINITE = 1,
+    LEGACY = 0,
+    DEFAULT = 1,
     FLAT = 2
 }
 

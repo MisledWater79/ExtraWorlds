@@ -5,21 +5,10 @@ import { Player, ServerPlayer } from "bdsx/bds/player";
 import { SystemLog, SystemLogType } from "./util/system";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { serverProperties } from "bdsx/serverproperties";
-import { World, WorldData, WorldType, levels, runningWorlds, takenPortv4 } from "./util/world";
-import { bedrockServer } from "bdsx/launcher";
+import { World, WorldData, WorldType, levels, takenPortv4 } from "./util/world";
 
 export let isMainFile: boolean;
 export let ServerData = {};
-
-declare module 'bdsx/bds/player' {
-    interface Player {
-        m(): string;
-    }
-}
-
-Player.prototype.m = function()  {
-    return "test"
-}
 
 SystemLog("Plugin Allocated", SystemLogType.LOG);
 
@@ -50,7 +39,7 @@ events.serverOpen.on(()=>{
         const w = new World();
         w.running = true;
         w.skip = true;
-        w.info = new WorldData(serverProperties['level-name'], WorldType.INFINITE);
+        w.info = new WorldData(serverProperties['level-name'], WorldType.DEFAULT);
         levels.push(w);
     }
 
