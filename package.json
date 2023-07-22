@@ -1,6 +1,6 @@
 {
   "name": "@bdsx/extraworlds",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "index.js",
   "keywords": [],
@@ -20,6 +20,6 @@
     "eslint": "^8.31.0"
   },
   "dependencies": {
-    "uuid": "^9.0.0"
+    "nbtify": "^1.63.0"
   }
 }
