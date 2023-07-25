@@ -5,7 +5,7 @@ import { ServerPlayer } from "bdsx/bds/player";
 import { SystemLog, SystemLogType } from "./util/system";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { serverProperties } from "bdsx/serverproperties";
-import { World, WorldData, WorldType, levels, takenPortv4 } from "./util/world";
+import { World, levels, takenPortv4 } from "./util/world";
 
 export let isMainFile: boolean;
 export let ServerData = {};
@@ -40,7 +40,6 @@ events.serverOpen.on(()=>{
         w.running = true;
         w.skip = true;
         w.info.LevelName = serverProperties['level-name'];
-        w.info.GameType = WorldType.DEFAULT;
         levels.push(w);
     }
 

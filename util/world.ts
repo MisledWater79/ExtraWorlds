@@ -216,12 +216,6 @@ export class WorldData {
     educationFeaturesEnabled: boolean = false;
 }
 
-export enum WorldType {
-    LEGACY = 0,
-    DEFAULT = 1,
-    FLAT = 2
-}
-
 export class WorldLayers {
     blocks: BlockLayer[];
 

@@ -2,7 +2,7 @@ import { CommandPermissionLevel } from "bdsx/bds/command";
 import { ServerPlayer } from "bdsx/bds/player";
 import { command } from "bdsx/command";
 import { SystemLog, SystemLogType } from "../util/system";
-import { World, WorldData, WorldType, levels } from "../util/world";
+import { World, WorldData } from "../util/world";
 import { BLOCKSETTINGS_FORM, CREATEWORLD_FORM, EXPERIMENTS_FORM, MOBSETTINGS_FORM, PLAYERSETTINGS_FORM, WORLDCHEATS_FORM, WORLDINFO_FORM, WORLDMENU_FORM, WORLDSETTINGS_FORM, getFormData } from "../forms/worldForms";
 import { CustomForm, FormButton, FormDropdown, FormInput, FormStepSlider, FormToggle, SimpleForm } from "bdsx/bds/form";
 import { NetworkIdentifier } from "bdsx/bds/networkidentifier";
