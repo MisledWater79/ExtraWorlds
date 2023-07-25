@@ -1,7 +1,7 @@
 
 import { events } from "bdsx/event";
 import { command } from "bdsx/command"
-import { Player, ServerPlayer } from "bdsx/bds/player";
+import { ServerPlayer } from "bdsx/bds/player";
 import { SystemLog, SystemLogType } from "./util/system";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { serverProperties } from "bdsx/serverproperties";
@@ -39,7 +39,8 @@ events.serverOpen.on(()=>{
         const w = new World();
         w.running = true;
         w.skip = true;
-        w.info = new WorldData(serverProperties['level-name'], WorldType.DEFAULT);
+        w.info.LevelName = serverProperties['level-name'];
+        w.info.GameType = WorldType.DEFAULT;
         levels.push(w);
     }
 
