@@ -1,34 +1,236 @@
 import { CommandPermissionLevel } from "bdsx/bds/command";
-import { FormButton, SimpleForm } from "bdsx/bds/form";
 import { ServerPlayer } from "bdsx/bds/player";
 import { command } from "bdsx/command";
 import { SystemLog, SystemLogType } from "../util/system";
 import { World, WorldData, WorldType, levels } from "../util/world";
+import { BLOCKSETTINGS_FORM, CREATEWORLD_FORM, EXPERIMENTS_FORM, MOBSETTINGS_FORM, PLAYERSETTINGS_FORM, WORLDCHEATS_FORM, WORLDINFO_FORM, WORLDMENU_FORM, WORLDSETTINGS_FORM, getFormData } from "../forms/worldForms";
+import { CustomForm, FormButton, FormDropdown, FormInput, FormStepSlider, FormToggle, SimpleForm } from "bdsx/bds/form";
+import { NetworkIdentifier } from "bdsx/bds/networkidentifier";
 
 SystemLog(`Registering createworld command`, SystemLogType.DEBUG);
 
 command.register("createworld", "Creates a brand new world!", CommandPermissionLevel.Operator)
-.overload((param, origin, output) => {
+.overload(async (param, origin, output) => {
     if(origin.isServerCommandOrigin() || origin !instanceof ServerPlayer) return false;
     const player: ServerPlayer = <ServerPlayer>origin.getEntity();
-    const form = new SimpleForm("CreateWorld");
-    form.addButton(new FormButton("New World", "url", "https://raw.githubusercontent.com/MisledWater79/ExtraWorlds/main/data/grass.png"), "w")
-    form.addButton(new FormButton("New Super Flat World", "url", "https://raw.githubusercontent.com/MisledWater79/ExtraWorlds/main/data/dirt.png"), "sfw")
-    form.addButton(new FormButton("New Void World", "url", "https://raw.githubusercontent.com/MisledWater79/ExtraWorlds/main/data/bedrock.png"), "vw")
-    form.sendTo(player.getNetworkIdentifier(), (form, net) => {
+
+    CREATEWORLD_FORM.sendTo(player.getNetworkIdentifier(), async (form, net) => {
+        let world = new World();
+
+        // Get world info and set it
+        const worldInfo = await getFormData(WORLDINFO_FORM, net);
+        for(let i in worldInfo) {
+            //This is the best I could do lol, couold figure out a better way to check if i is a key in WorldData
+            if(Number(i) >= 0) continue;
+            let key = <keyof WorldData> i;
+            setProperty(world.info, key, worldInfo[i]);
+        };
+
+        // Set game type (what kind of world)
         switch(form.response) {
-            case "w":
-                const w = new World();
-                w.info = new WorldData('HelloWorld', WorldType.FLAT);
-                levels.push(w);
-                w.startWorld().then(() => {
-                    player.transferServer('127.0.0.1', 19134)
-                });
+            case "f":
+            case "v":
+                world.info.GameType = 2;
                 break;
-            case "sfw":
+            case "d":
+                world.info.GameType = 1;
                 break;
-            case "vw":
+            case "l":
+                world.info.GameType = 0;
                 break;
-        }
+        };
+
+        // Change the menu form to add superflat settings if needed and sent to player
+        let val = await worldMenu(world, net);
+        if(!val) return console.log('canceled');
+
+        world = val;
+        console.log(world.info);
     })
 },{})
+
+function setProperty<T, K extends keyof T>(obj: T, key: K, value: T[K]): void {
+    obj[key] = value;
+}
+
+async function worldMenu(w: World, player: NetworkIdentifier): Promise<World | null> {
+    let world = w;
+    let val: World | null;
+    let updatedForm: CustomForm | SimpleForm;
+
+    // TODO: Fix for void worlds since we dont want settings for it
+    const new_form = WORLDMENU_FORM;
+    if(w.info.GameType == 2) new_form.addButton(new FormButton("Super Flat Settings"), "f");
+    const response = await getFormData(new_form, player);
+
+    switch(response) {
+        // World Settings
+        case "w":
+            updatedForm = WORLDSETTINGS_FORM;
+            (updatedForm.getComponent(0) as FormInput).default = world.info.RandomSeed.toString();
+            (updatedForm.getComponent(1) as FormToggle).default = world.info.dodaylightcycle;
+            (updatedForm.getComponent(2) as FormToggle).default = world.info.dofiretick;
+            (updatedForm.getComponent(3) as FormToggle).default = world.info.doweathercycle;
+            (updatedForm.getComponent(4) as FormInput).default = world.info.randomtickspeed.toString();
+            let chunks = world.info.serverChunkTickRange;
+            (updatedForm.getComponent(5) as FormStepSlider).default = (chunks == 4 ? 0 : chunks == 6 ? 1 : chunks == 8 ? 2 : chunks == 10 ? 3 : 4);
+            (updatedForm.getComponent(6) as FormInput).default = world.info.spawnradius.toString();
+            (updatedForm.getComponent(7) as FormInput).default = world.info.SpawnX.toString();
+            (updatedForm.getComponent(8) as FormInput).default = world.info.SpawnY.toString();
+            (updatedForm.getComponent(9) as FormInput).default = world.info.SpawnZ.toString();
+            (updatedForm.getComponent(10) as FormInput).default = world.info.NetherScale.toString();
+
+            const worldSettings = await getFormData(updatedForm, player);
+            world.info.RandomSeed = worldSettings[0];
+            world.info.dodaylightcycle = worldSettings[1];
+            world.info.dofiretick = worldSettings[2];
+            world.info.doweathercycle = worldSettings[3];
+            world.info.randomtickspeed = worldSettings[4];
+            chunks = worldSettings[5];
+            world.info.serverChunkTickRange = (chunks == 0 ? 4 : chunks == 1 ? 6 : chunks == 2 ? 8 : chunks == 3 ? 10 : 12);
+            world.info.spawnradius = worldSettings[6];
+            world.info.SpawnX = worldSettings[7];
+            world.info.SpawnY = worldSettings[8];
+            world.info.SpawnZ = worldSettings[9];
+            world.info.NetherScale = worldSettings[10];
+
+            val = await worldMenu(world, player);
+            if(!val) break;
+            return val;
+
+        // Cheats Settings
+        case "c":
+            updatedForm = WORLDCHEATS_FORM;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.cheatsEnabled;
+            (updatedForm.getComponent(1) as FormToggle).default = world.info.commandblockoutput;
+            (updatedForm.getComponent(2) as FormToggle).default = world.info.commandblocksenabled;
+            (updatedForm.getComponent(3) as FormToggle).default = world.info.commandsEnabled;
+            (updatedForm.getComponent(4) as FormToggle).default = world.info.sendCommandfeedback;
+
+            const cheatSettings = await getFormData(updatedForm, player);
+            for(let i in cheatSettings) {
+                if(Number(i) >= 0) continue;
+                let key = <keyof WorldData> i;
+                setProperty(world.info, key, cheatSettings[i]);
+            }
+
+            val = await worldMenu(world, player);
+            if(!val) break;
+            return val;
+
+        // Block Settings
+        case "b":
+            updatedForm = BLOCKSETTINGS_FORM;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.dotiledrops;
+            (updatedForm.getComponent(1) as FormToggle).default = world.info.respawnblocksexplode;
+            (updatedForm.getComponent(2) as FormToggle).default = world.info.showbordereffect;
+            (updatedForm.getComponent(3) as FormToggle).default = world.info.tntexplodes;
+
+            const blockSettings = await getFormData(updatedForm, player);
+            for(let i in blockSettings) {
+                if(Number(i) >= 0) continue;
+                let key = <keyof WorldData> i;
+                setProperty(world.info, key, blockSettings[i]);
+            }
+
+            val = await worldMenu(world, player);
+            if(!val) break;
+            return val;
+
+        // Mob Settings
+        case "m":
+            updatedForm = MOBSETTINGS_FORM;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.domobloot;
+            (updatedForm.getComponent(1) as FormToggle).default = world.info.domobspawning;
+            (updatedForm.getComponent(2) as FormToggle).default = world.info.doentitydrops;
+            (updatedForm.getComponent(3) as FormToggle).default = world.info.mobgriefing;
+            (updatedForm.getComponent(4) as FormToggle).default = world.info.spawnMobs;
+
+            const mobSettings = await getFormData(updatedForm, player);
+            for(let i in mobSettings) {
+                if(Number(i) >= 0) continue;
+                let key = <keyof WorldData> i;
+                setProperty(world.info, key, mobSettings[i]);
+            }
+
+            val = await worldMenu(world, player);
+            if(!val) break;
+            return val;
+
+        // Player Settings
+        case "p":
+            updatedForm = PLAYERSETTINGS_FORM;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.doinsomnia;
+            (updatedForm.getComponent(1) as FormToggle).default = world.info.doimmediaterespawn;
+            (updatedForm.getComponent(2) as FormToggle).default = world.info.drowningdamage;
+            (updatedForm.getComponent(3) as FormToggle).default = world.info.falldamage;
+            (updatedForm.getComponent(4) as FormToggle).default = world.info.firedamage;
+            (updatedForm.getComponent(5) as FormToggle).default = world.info.freezedamage;
+            (updatedForm.getComponent(6) as FormToggle).default = world.info.keepinventory;
+            (updatedForm.getComponent(7) as FormToggle).default = world.info.natruralregeneration;
+            (updatedForm.getComponent(8) as FormDropdown).default = world.info.playerPermissionLevel;
+            (updatedForm.getComponent(9) as FormToggle).default = world.info.pvp;
+            (updatedForm.getComponent(10) as FormToggle).default = world.info.showcoordinates;
+            (updatedForm.getComponent(11) as FormToggle).default = world.info.showdeathmessage;
+            (updatedForm.getComponent(12) as FormToggle).default = world.info.showtags;
+            (updatedForm.getComponent(13) as FormToggle).default = world.info.startWithMapEnabled;
+            (updatedForm.getComponent(14) as FormToggle).default = world.info.useMsaGamertagsOnly;
+
+            const playerSettings = await getFormData(updatedForm, player);
+            world.info.doinsomnia = playerSettings[0];
+            world.info.doimmediaterespawn = playerSettings[1];
+            world.info.drowningdamage = playerSettings[2];
+            world.info.falldamage = playerSettings[3];
+            world.info.firedamage = playerSettings[4];
+            world.info.freezedamage = playerSettings[5];
+            world.info.keepinventory = playerSettings[6];
+            world.info.natruralregeneration = playerSettings[7];
+            world.info.playerPermissionLevel = playerSettings[8];
+            world.info.pvp = playerSettings[9];
+            world.info.showcoordinates = playerSettings[10];
+            world.info.showdeathmessage = playerSettings[11];
+            world.info.showtags = playerSettings[12];
+            world.info.startWithMapEnabled = playerSettings[13];
+            world.info.useMsaGamertagsOnly = playerSettings[14];
+
+            val = await worldMenu(world, player);
+            if(!val) break;
+            return val;
+
+        // Experiment Settings
+        case "e":
+            updatedForm = EXPERIMENTS_FORM;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.short_sneaking;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.recipe_unlocking;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.data_driven_items;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.data_driven_biomes;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.upcoming_creator_features;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.gametest;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.experimental_molang_features;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.cameras;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.educationFeaturesEnabled;
+
+            const experimentSettings = await getFormData(updatedForm, player);
+            for(let i in experimentSettings) {
+                if(Number(i) >= 0) continue;
+                let key = <keyof WorldData> i;
+                setProperty(world.info, key, experimentSettings[i]);
+            }
+
+            val = await worldMenu(world, player);
+            if(!val) break;
+            return val;
+
+        // Super Flat Settings
+        case "f":
+            val = await worldMenu(world, player);
+            if(!val) break;
+            return val;
+
+        // Create World
+        case "x":
+            return w;
+    }
+
+    return null;
+}
