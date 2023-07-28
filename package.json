@@ -19,7 +19,5 @@
     "bdsx": "file:../bdsx",
     "eslint": "^8.31.0"
   },
-  "dependencies": {
-    "nbtify": "^1.63.0"
-  }
+  "dependencies": {}
 }

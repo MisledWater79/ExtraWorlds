@@ -1,5 +1,3 @@
-//anything for generating worlds
-//world class with everything to generate it and run it, then will be saved to a list here
 import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { SystemLog, SystemLogType } from "./system";
 import { join } from "path";
@@ -9,6 +7,8 @@ import { isMainFile } from "..";
 import { readFileSync, writeFileSync } from "fs";
 import { serverProperties } from "bdsx/serverproperties";
 import { bedrockServer } from "bdsx/launcher";
+import * as nbt from 'prismarine-nbt';
+import { addWorldHeader, setProperty } from "./fileSystem";
 
 async function stopWorlds(): Promise<void> {
     for(let i = 0; i < levels.length; i++){
@@ -69,15 +69,15 @@ export class World {
         if(this.bat || this.info.LevelName == serverProperties['level-name'] || isWorldRunning(this.info.LevelName)) {
             SystemLog(`Cannot start world ${this.info.LevelName} because world is already running.`);
         } else {
-            if(takenPortv4.includes(this.info.portv4)) {
+            if(takenPortv4.includes(this.info.severProperties.portv4)) {
                 let newPort = getNextPortv4();
-                SystemLog(`Port ${this.info.portv4} is taken changing to ${newPort}`, SystemLogType.ERROR);
-                this.info.portv4 = newPort;
-                this.info.portv6 = newPort++;
+                SystemLog(`Port ${this.info.severProperties.portv4} is taken changing to ${newPort}`, SystemLogType.ERROR);
+                this.info.severProperties.portv4 = newPort;
+                this.info.severProperties.portv6 = newPort++;
                 takenPortv4.push(newPort);
             }
 
-            writeFileSync('server.properties', this.setWorldData());
+            await this.setWorldData();
 
             this.bat = spawn('cmd.exe', ['/c',`${join(cwd(), '..')}/bdsx.bat`]);
 
@@ -135,24 +135,47 @@ export class World {
         })
     }
 
-    setWorldData() {
-        let data = readFileSync('ExtraWorlds/serverPropBackup.properties').toString();
-        data = data.replace(`level-name=${serverProperties["level-name"]}`, `level-name=${this.info.LevelName}`);
-        data = data.replace(`server-port=${serverProperties["server-port"]}`, `server-port=${this.info.portv4}`);
-        data = data.replace(`server-portv6=${serverProperties["server-portv6"]}`, `server-portv6=${this.info.portv6}`);
-        data += `level-type=FLAT`;
-        return data;
+    async setWorldData() {
+        const LEVEL_DAT = '../plugins/extraworlds/data/DEFAULT.dat';
+
+        let file = readFileSync(LEVEL_DAT);
+        // const { parsed, type } = await nbt.parse(file);
+
+        // const data = parsed.value;
+        // const values = <Record<string, Object>>data.experiments?.value;
+
+        // for(const key in this.info.experiments) {
+        //     values[key] = this.info.experiments[key];
+        // }
+
+        // for(const key in this.info){
+        //     if(typeof this.info[key] == "object") continue;
+        //     data[key] = this.info[key];
+        // }
+
+        // writeFileSync(`worlds/${this.info.LevelName}/level.dat`, addWorldHeader(file, nbt.writeUncompressed(parsed, type)));
+
+        let properties = readFileSync('ExtraWorlds/serverPropBackup.properties').toString();
+        properties = properties.replace(`level-name=${serverProperties["level-name"]}`, `level-name=${this.info.LevelName}`);
+        properties = properties.replace(`server-port=${serverProperties["server-port"]}`, `server-port=${this.info.severProperties.portv4}`);
+        properties = properties.replace(`server-portv6=${serverProperties["server-portv6"]}`, `server-portv6=${this.info.severProperties.portv6}`);
+        let gameType = this.info.GameType;
+        properties += `level-type=${gameType == 0 ? 'LEGACY' : gameType == 1 ? 'DEFAULT' : 'FLAT'}`;
+
+        writeFileSync(`server.properties`, properties);
     }
 }
 
 export class WorldData {
+    [index: string]: any;
     //WORLD INFO
     LevelName: string = "";
     GameType: number = 1; //0=LEGACY 1=DEFAULT 2=FLAT
     RandomSeed: number = 0;
-    levelIP: string; //Not needed since it will run on whatever ip specified in propeties
-    portv4: number = 19132; //set to our default port +2*WorldProccesses
-    portv6: number = 19133;
+    severProperties: Properties = {
+        portv4: 19132, //set to our default port +2*WorldProccesses
+        portv6: 19133
+    };
     FlatWorldLayers: WorldLayers;
 
     //CHEATS
@@ -205,15 +228,35 @@ export class WorldData {
     useMsaGamertagsOnly: boolean = false;
 
     //EXPERIMENTS
-    short_sneaking: boolean = false;
-    recipe_unlocking: boolean = false;
-    data_driven_items: boolean = false;
-    data_driven_biomes: boolean = false;
-    upcoming_creator_features: boolean = false;
-    gametest: boolean = false;
-    experimental_molang_features: boolean = false;
-    cameras: boolean = false;
-    educationFeaturesEnabled: boolean = false;
+    experiments: Experiments = {
+        short_sneaking: false,
+        recipe_unlocking: false,
+        data_driven_items: false,
+        data_driven_biomes: false,
+        upcoming_creator_features: false,
+        gametest: false,
+        experimental_molang_features: false,
+        cameras: false,
+        educationFeaturesEnabled: false
+    };
+}
+
+export interface Experiments {
+    [index: string]: boolean;
+    short_sneaking: boolean;
+    recipe_unlocking: boolean;
+    data_driven_items: boolean;
+    data_driven_biomes: boolean;
+    upcoming_creator_features: boolean;
+    gametest: boolean;
+    experimental_molang_features: boolean;
+    cameras: boolean;
+    educationFeaturesEnabled: boolean;
+}
+
+export interface Properties {
+    portv4: number;
+    portv6: number;
 }
 
 export class WorldLayers {

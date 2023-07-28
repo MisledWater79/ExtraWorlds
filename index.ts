@@ -1,4 +1,3 @@
-
 import { events } from "bdsx/event";
 import { command } from "bdsx/command"
 import { ServerPlayer } from "bdsx/bds/player";

@@ -2,10 +2,11 @@ import { CommandPermissionLevel } from "bdsx/bds/command";
 import { ServerPlayer } from "bdsx/bds/player";
 import { command } from "bdsx/command";
 import { SystemLog, SystemLogType } from "../util/system";
-import { World, WorldData } from "../util/world";
+import { Experiments, World, WorldData } from "../util/world";
 import { BLOCKSETTINGS_FORM, CREATEWORLD_FORM, EXPERIMENTS_FORM, MOBSETTINGS_FORM, PLAYERSETTINGS_FORM, WORLDCHEATS_FORM, WORLDINFO_FORM, WORLDMENU_FORM, WORLDSETTINGS_FORM, getFormData } from "../forms/worldForms";
 import { CustomForm, FormButton, FormDropdown, FormInput, FormStepSlider, FormToggle, SimpleForm } from "bdsx/bds/form";
 import { NetworkIdentifier } from "bdsx/bds/networkidentifier";
+import { setProperty } from "../util/fileSystem";
 
 SystemLog(`Registering createworld command`, SystemLogType.DEBUG);
 
@@ -48,10 +49,6 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
         console.log(world.info);
     })
 },{})
-
-function setProperty<T, K extends keyof T>(obj: T, key: K, value: T[K]): void {
-    obj[key] = value;
-}
 
 async function worldMenu(w: World, player: NetworkIdentifier): Promise<World | null> {
     let world = w;
@@ -200,21 +197,21 @@ async function worldMenu(w: World, player: NetworkIdentifier): Promise<World | n
         // Experiment Settings
         case "e":
             updatedForm = EXPERIMENTS_FORM;
-            (updatedForm.getComponent(0) as FormToggle).default = world.info.short_sneaking;
-            (updatedForm.getComponent(0) as FormToggle).default = world.info.recipe_unlocking;
-            (updatedForm.getComponent(0) as FormToggle).default = world.info.data_driven_items;
-            (updatedForm.getComponent(0) as FormToggle).default = world.info.data_driven_biomes;
-            (updatedForm.getComponent(0) as FormToggle).default = world.info.upcoming_creator_features;
-            (updatedForm.getComponent(0) as FormToggle).default = world.info.gametest;
-            (updatedForm.getComponent(0) as FormToggle).default = world.info.experimental_molang_features;
-            (updatedForm.getComponent(0) as FormToggle).default = world.info.cameras;
-            (updatedForm.getComponent(0) as FormToggle).default = world.info.educationFeaturesEnabled;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.experiments.short_sneaking;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.experiments.recipe_unlocking;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.experiments.data_driven_items;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.experiments.data_driven_biomes;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.experiments.upcoming_creator_features;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.experiments.gametest;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.experiments.experimental_molang_features;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.experiments.cameras;
+            (updatedForm.getComponent(0) as FormToggle).default = world.info.experiments.educationFeaturesEnabled;
 
             const experimentSettings = await getFormData(updatedForm, player);
             for(let i in experimentSettings) {
                 if(Number(i) >= 0) continue;
-                let key = <keyof WorldData> i;
-                setProperty(world.info, key, experimentSettings[i]);
+                let key = <keyof Experiments> i;
+                setProperty(world.info.experiments, key, experimentSettings[i]);
             }
 
             val = await worldMenu(world, player);
