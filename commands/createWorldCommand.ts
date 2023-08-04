@@ -47,6 +47,7 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
 
         world = val;
         console.log(world.info);
+        world.setWorldData();
     })
 },{})
 

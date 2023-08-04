@@ -7,8 +7,9 @@ import { isMainFile } from "..";
 import { readFileSync, writeFileSync } from "fs";
 import { serverProperties } from "bdsx/serverproperties";
 import { bedrockServer } from "bdsx/launcher";
-import * as nbt from 'prismarine-nbt';
+import * as nbt from 'nbtify';
 import { addWorldHeader, setProperty } from "./fileSystem";
+import { WorldNBT } from "./worldNBT";
 
 async function stopWorlds(): Promise<void> {
     for(let i = 0; i < levels.length; i++){
@@ -138,22 +139,31 @@ export class World {
     async setWorldData() {
         const LEVEL_DAT = '../plugins/extraworlds/data/DEFAULT.dat';
 
-        let file = readFileSync(LEVEL_DAT);
-        // const { parsed, type } = await nbt.parse(file);
+        let worldNBT = new WorldNBT(readFileSync(LEVEL_DAT));
 
-        // const data = parsed.value;
-        // const values = <Record<string, Object>>data.experiments?.value;
+        let data = worldNBT.worldDat[""].data;
 
-        // for(const key in this.info.experiments) {
-        //     values[key] = this.info.experiments[key];
-        // }
+        for(const key in this.info.experiments) {
+            console.log(key);
+            console.log(JSON.stringify(data.experiments.data))
+            data.experiments.data[key].data = this.info.experiments[key];
+        }
 
-        // for(const key in this.info){
-        //     if(typeof this.info[key] == "object") continue;
-        //     data[key] = this.info[key];
-        // }
+        for(const key in this.info) {
+            if(typeof this.info[key] == "object") continue;
+            if(data[key] == undefined) continue;
+            switch(typeof this.info[key]){
+                case 'boolean':
+                    data[key].data = Number(this.info[key]);
+                    break;
+                default:
+                    data[key].data = this.info[key];
+                    break;
+            }
+            console.log(data[key])
+        }
 
-        // writeFileSync(`worlds/${this.info.LevelName}/level.dat`, addWorldHeader(file, nbt.writeUncompressed(parsed, type)));
+        worldNBT.writeWorld('worlds/test/e.dat')
 
         let properties = readFileSync('ExtraWorlds/serverPropBackup.properties').toString();
         properties = properties.replace(`level-name=${serverProperties["level-name"]}`, `level-name=${this.info.LevelName}`);
@@ -183,13 +193,14 @@ export class WorldData {
     commandblockoutput: boolean = true;
     commandblocksenabled: boolean = true;
     commandsEnabled: boolean = true;
-    sendCommandfeedback: boolean = true;
+    sendcommandfeedback: boolean = true;
 
-    //WORLD
+    //WORLD,
+    educationFeaturesEnabled: boolean = false;
     dodaylightcycle: boolean = true;
     dofiretick: boolean = true;
     doweathercycle: boolean = true;
-    randomtickspeed: number = 0;
+    randomtickspeed: number = 1;
     serverChunkTickRange: number = 4;
     spawnradius: number = 5;
     SpawnX: number = 0;
@@ -218,7 +229,7 @@ export class WorldData {
     firedamage: boolean = true;
     freezedamage: boolean = true;
     keepinventory: boolean = false;
-    natruralregeneration: boolean = true;
+    naturalregeneration: boolean = true;
     playerPermissionLevel: number = 1; //0=VISITOR 1=MEMBER 2=OP
     pvp: boolean = true;
     showcoordinates: boolean = false;
@@ -236,8 +247,7 @@ export class WorldData {
         upcoming_creator_features: false,
         gametest: false,
         experimental_molang_features: false,
-        cameras: false,
-        educationFeaturesEnabled: false
+        cameras: false
     };
 }
 
@@ -251,7 +261,6 @@ export interface Experiments {
     gametest: boolean;
     experimental_molang_features: boolean;
     cameras: boolean;
-    educationFeaturesEnabled: boolean;
 }
 
 export interface Properties {

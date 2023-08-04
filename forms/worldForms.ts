@@ -44,13 +44,14 @@ WORLDSETTINGS_FORM.addComponent(new FormInput("Spawn X", "X Cord"), "SpawnX");
 WORLDSETTINGS_FORM.addComponent(new FormInput("Spawn Y", "Y Cord"), "SpawnY");
 WORLDSETTINGS_FORM.addComponent(new FormInput("Spawn Z", "Z Cord"), "SpawnZ");
 WORLDSETTINGS_FORM.addComponent(new FormInput("Nether Scale", "Nether Scale"), "NetherScale");
+WORLDSETTINGS_FORM.addComponent(new FormToggle("Education Edition"), "educationFeaturesEnabled");
 
 export const WORLDCHEATS_FORM = new CustomForm("World Cheats");
 WORLDCHEATS_FORM.addComponent(new FormToggle("Cheats Enabled"), "cheatsEnabled");
 WORLDCHEATS_FORM.addComponent(new FormToggle("Command Block Output"), "commandblockoutput");
 WORLDCHEATS_FORM.addComponent(new FormToggle("Command Blocks Enabled"), "commandblocksenabled");
 WORLDCHEATS_FORM.addComponent(new FormToggle("Commands Enabled"), "commandsEnabled");
-WORLDCHEATS_FORM.addComponent(new FormToggle("Send Command Feedback"), "sendCommandfeedback");
+WORLDCHEATS_FORM.addComponent(new FormToggle("Send Command Feedback"), "sendcommandfeedback");
 
 export const BLOCKSETTINGS_FORM = new CustomForm("Block Settings");
 BLOCKSETTINGS_FORM.addComponent(new FormToggle("Tile Drops"), "dotiledrops");
@@ -73,7 +74,7 @@ PLAYERSETTINGS_FORM.addComponent(new FormToggle("Fall Damage"), "falldamage");
 PLAYERSETTINGS_FORM.addComponent(new FormToggle("Fire Damage"), "firedamage");
 PLAYERSETTINGS_FORM.addComponent(new FormToggle("Freeze Damage"), "freezedamage");
 PLAYERSETTINGS_FORM.addComponent(new FormToggle("Keep Inventory"), "keepinventory");
-PLAYERSETTINGS_FORM.addComponent(new FormToggle("Natrural Regeneration"), "natruralregeneration");
+PLAYERSETTINGS_FORM.addComponent(new FormToggle("Natural Regeneration"), "naturalregeneration");
 PLAYERSETTINGS_FORM.addComponent(new FormDropdown("Default Player Permission", ["Visitor", "Member", "Operator"]), "playerPermissionLevel");
 PLAYERSETTINGS_FORM.addComponent(new FormToggle("Friendly Fire"), "pvp");
 PLAYERSETTINGS_FORM.addComponent(new FormToggle("Show Coordinates"), "showcoordinates");
@@ -92,7 +93,6 @@ EXPERIMENTS_FORM.addComponent(new FormToggle("Upcoming Creator Features"), "upco
 EXPERIMENTS_FORM.addComponent(new FormToggle("Beta APIs"), "gametest");
 EXPERIMENTS_FORM.addComponent(new FormToggle("Molang Features"), "experimental_molang_features");
 EXPERIMENTS_FORM.addComponent(new FormToggle("Experimental Cameras"), "cameras");
-EXPERIMENTS_FORM.addComponent(new FormToggle("Education Edition"), "educationFeaturesEnabled");
 
 // FOR SUPERFLAT
 export const FLATSETTINGS_FORM = new CustomForm("SuperFlat Settings");
