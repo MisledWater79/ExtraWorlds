@@ -2,7 +2,7 @@ import { CommandPermissionLevel } from "bdsx/bds/command";
 import { ServerPlayer } from "bdsx/bds/player";
 import { command } from "bdsx/command";
 import { SystemLog, SystemLogType } from "../util/system";
-import { Experiments, World, WorldData } from "../util/world";
+import { Experiments, World, WorldData, levels } from "../util/world";
 import { BLOCKSETTINGS_FORM, CREATEWORLD_FORM, EXPERIMENTS_FORM, MOBSETTINGS_FORM, PLAYERSETTINGS_FORM, WORLDCHEATS_FORM, WORLDINFO_FORM, WORLDMENU_FORM, WORLDSETTINGS_FORM, getFormData } from "../forms/worldForms";
 import { CustomForm, FormButton, FormDropdown, FormInput, FormStepSlider, FormToggle, SimpleForm } from "bdsx/bds/form";
 import { NetworkIdentifier } from "bdsx/bds/networkidentifier";
@@ -20,34 +20,33 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
 
         // Get world info and set it
         const worldInfo = await getFormData(WORLDINFO_FORM, net);
-        for(let i in worldInfo) {
-            //This is the best I could do lol, couold figure out a better way to check if i is a key in WorldData
-            if(Number(i) >= 0) continue;
-            let key = <keyof WorldData> i;
-            setProperty(world.info, key, worldInfo[i]);
-        };
+
+        world.info.LevelName = worldInfo[0];
+        world.info.serverProperties.portv4 = Number(worldInfo[1]);
+        world.info.serverProperties.portv6 = Number(worldInfo[2]);
 
         // Set game type (what kind of world)
         switch(form.response) {
             case "f":
             case "v":
-                world.info.GameType = 2;
+                world.info.Generator = 2;
                 break;
             case "d":
-                world.info.GameType = 1;
+                world.info.Generator = 1;
                 break;
             case "l":
-                world.info.GameType = 0;
+                world.info.Generator = 0;
                 break;
         };
 
         // Change the menu form to add superflat settings if needed and sent to player
-        let val = await worldMenu(world, net);
-        if(!val) return console.log('canceled');
+        const newWorld = await worldMenu(world, net);
+        if(!newWorld) return console.log('canceled');
 
-        world = val;
-        console.log(world.info);
-        world.setWorldData();
+        await newWorld.startWorld();
+        levels.push(newWorld);
+
+        net.getActor()?.transferServer('127.0.0.1', 19134)
     })
 },{})
 
@@ -58,14 +57,14 @@ async function worldMenu(w: World, player: NetworkIdentifier): Promise<World | n
 
     // TODO: Fix for void worlds since we dont want settings for it
     const new_form = WORLDMENU_FORM;
-    if(w.info.GameType == 2) new_form.addButton(new FormButton("Super Flat Settings"), "f");
+    if(w.info.Generator == 2) new_form.addButton(new FormButton("Super Flat Settings"), "f");
     const response = await getFormData(new_form, player);
 
     switch(response) {
         // World Settings
         case "w":
             updatedForm = WORLDSETTINGS_FORM;
-            (updatedForm.getComponent(0) as FormInput).default = world.info.RandomSeed.toString();
+            (updatedForm.getComponent(0) as FormInput).default = world.info.RandomSeed;
             (updatedForm.getComponent(1) as FormToggle).default = world.info.dodaylightcycle;
             (updatedForm.getComponent(2) as FormToggle).default = world.info.dofiretick;
             (updatedForm.getComponent(3) as FormToggle).default = world.info.doweathercycle;

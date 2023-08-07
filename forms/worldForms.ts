@@ -33,7 +33,7 @@ WORLDMENU_FORM.addButton(new FormButton("Experiment Settings"), "e");
 WORLDMENU_FORM.addButton(new FormButton("§l§bCreate World"), "x");
 
 export const WORLDSETTINGS_FORM = new CustomForm("World Settings");
-WORLDSETTINGS_FORM.addComponent(new FormInput("Seed", "World Seed"), "levelSeed");
+WORLDSETTINGS_FORM.addComponent(new FormInput("Seed", "World Seed"), "RandomSeed");
 WORLDSETTINGS_FORM.addComponent(new FormToggle("Do Daylight Cycle"), "dodaylightcycle");
 WORLDSETTINGS_FORM.addComponent(new FormToggle("Fire Spreads"), "dofiretick");
 WORLDSETTINGS_FORM.addComponent(new FormToggle("Weather Cycle"), "doweathercycle");

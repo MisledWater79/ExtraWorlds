@@ -1,4 +1,5 @@
-import { mkdir, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { mkdirSync, writeFileSync } from "fs";
+import { BN } from 'bn.js';
 
 export class WorldNBT {
     view: DataView;
@@ -170,7 +171,7 @@ export class WorldNBT {
         return compound;
     }
 
-    writeWorld(path: string){
+    writeWorld(){
         this.view = new DataView(new ArrayBuffer(this.view.byteLength));
 
         this.offset = 0;
@@ -183,16 +184,20 @@ export class WorldNBT {
 
         this.setCompound(this.worldDat[""].data);
 
-        //mkdirSync(path.substr(0, path.length-6));
+        try {
+            mkdirSync(`worlds/${this.worldDat[""].data.LevelName.data}`);
+        } catch {};
 
-        writeFileSync(path, this.view);
+        writeFileSync(`worlds/${this.worldDat[""].data.LevelName.data}/level.dat`, this.view);
     }
 
-    setString(string: string) {
+    setString(string: string, update: boolean = false) {
         this.setShort(string.length);
-        const newarry = new Uint8Array(new ArrayBuffer(this.view.byteLength + string.length));
-        newarry.set(new Uint8Array(this.view.buffer));
-        this.view = new DataView(newarry.buffer, newarry.byteOffset, newarry.byteLength);
+        if(update) {
+            const newarry = new Uint8Array(new ArrayBuffer(this.view.byteLength + string.length));
+            newarry.set(new Uint8Array(this.view.buffer),0);
+            this.view = new DataView(newarry.buffer, newarry.byteOffset, newarry.byteLength);
+        }
         for(let i = 0; i < string.length; i++) {
             this.setByte(string.charCodeAt(i));
         }
@@ -214,11 +219,11 @@ export class WorldNBT {
     }
 
     setLong(long: string): void {
-        this.offset += 8;
-        const lowWord = Number(long) % 0x100000000;
-        const highWord = (Number(long) - lowWord) / 0x100000000;
-        this.view.setUint32(this.offset - 8, lowWord, true);
-        this.view.setUint32(this.offset - 4, highWord, true);
+        let bn = new BN(long, 10, 'le');
+        let buff = bn.toBuffer('le', 8)
+        for(let i = 0; i < buff.length; i++) {
+            this.setByte(buff.subarray(buff.length - i - 1)[0])
+        }
     }
 
     setFloat(float: number) {
@@ -258,7 +263,7 @@ export class WorldNBT {
                     //this.setList(list[i], );
                     break;
                 case 8:
-                    this.setString(String(list[i]));
+                    this.setString(String(list[i]), true);
                     break;
                 case 9:
                     //list.push(this.getList(this.getNextInt()));
@@ -304,7 +309,7 @@ export class WorldNBT {
                     this.setList(compound[key].data, 1);
                     break;
                 case 8:
-                    this.setString(compound[key].data);
+                    this.setString(compound[key].data, (key == 'LevelName' /*|| key == 'FlatWorldLayers*/) ? true : false);
                     break;
                 case 9:
                     this.setList(compound[key].data, compound[key].dataType);

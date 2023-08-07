@@ -6,3 +6,5 @@ SystemLog(`Registering Commands...`, SystemLogType.WARN);
 if(isMainFile) {
     require("./createWorldCommand");
 }
+
+require("./tranferWorldCommand")

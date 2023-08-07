@@ -45,11 +45,6 @@ events.serverOpen.on(()=>{
     SystemLog(`Plugin is main: ${isMainFile}`, SystemLogType.WARN);
 
     require('./commands/commandRegistry');
-    command.register("transfer","ee").overload((param, origin, output) => {
-        if(origin.isServerCommandOrigin()) return;
-        const player: ServerPlayer = <ServerPlayer>origin.getEntity();
-        player.transferServer("127.0.0.1", 19134);
-    },{})
 });
 
 events.serverClose.on(()=>{

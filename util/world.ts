@@ -7,8 +7,6 @@ import { isMainFile } from "..";
 import { readFileSync, writeFileSync } from "fs";
 import { serverProperties } from "bdsx/serverproperties";
 import { bedrockServer } from "bdsx/launcher";
-import * as nbt from 'nbtify';
-import { addWorldHeader, setProperty } from "./fileSystem";
 import { WorldNBT } from "./worldNBT";
 
 async function stopWorlds(): Promise<void> {
@@ -70,11 +68,11 @@ export class World {
         if(this.bat || this.info.LevelName == serverProperties['level-name'] || isWorldRunning(this.info.LevelName)) {
             SystemLog(`Cannot start world ${this.info.LevelName} because world is already running.`);
         } else {
-            if(takenPortv4.includes(this.info.severProperties.portv4)) {
+            if(takenPortv4.includes(this.info.serverProperties.portv4)) {
                 let newPort = getNextPortv4();
-                SystemLog(`Port ${this.info.severProperties.portv4} is taken changing to ${newPort}`, SystemLogType.ERROR);
-                this.info.severProperties.portv4 = newPort;
-                this.info.severProperties.portv6 = newPort++;
+                SystemLog(`Port ${this.info.serverProperties.portv4} is taken changing to ${newPort}`, SystemLogType.ERROR);
+                this.info.serverProperties.portv4 = newPort;
+                this.info.serverProperties.portv6 = newPort + 1;
                 takenPortv4.push(newPort);
             }
 
@@ -82,22 +80,16 @@ export class World {
 
             this.bat = spawn('cmd.exe', ['/c',`${join(cwd(), '..')}/bdsx.bat`]);
 
-            //plugins
-            this.bat.stderr.on("data", (data) => {
-                data = data.toString().split('\n');
-                data.pop();
-                data.forEach((str: string, index: number) => {
-                    SystemLog(`[${this.info.LevelName.magenta}] ` + str, SystemLogType.OTHER);
-                });
-            });
-            //bds
-            this.bat.stdout.on("data", (data) => {
+            let callback = (data: any) => {
                 data = data.toString().split('\n');
                 data.pop();
                 data.forEach((str: string) => {
                     SystemLog(`[${this.info.LevelName.magenta}] ` + str, SystemLogType.OTHER);
                 });
-            });
+            };
+
+            this.bat.stderr.on("data", callback);
+            this.bat.stdout.on("data", callback);
 
             await this.waitForStart();
         }
@@ -144,8 +136,6 @@ export class World {
         let data = worldNBT.worldDat[""].data;
 
         for(const key in this.info.experiments) {
-            console.log(key);
-            console.log(JSON.stringify(data.experiments.data))
             data.experiments.data[key].data = this.info.experiments[key];
         }
 
@@ -160,17 +150,16 @@ export class World {
                     data[key].data = this.info[key];
                     break;
             }
-            console.log(data[key])
         }
 
-        worldNBT.writeWorld('worlds/test/e.dat')
+        worldNBT.writeWorld();
 
         let properties = readFileSync('ExtraWorlds/serverPropBackup.properties').toString();
         properties = properties.replace(`level-name=${serverProperties["level-name"]}`, `level-name=${this.info.LevelName}`);
-        properties = properties.replace(`server-port=${serverProperties["server-port"]}`, `server-port=${this.info.severProperties.portv4}`);
-        properties = properties.replace(`server-portv6=${serverProperties["server-portv6"]}`, `server-portv6=${this.info.severProperties.portv6}`);
-        let gameType = this.info.GameType;
-        properties += `level-type=${gameType == 0 ? 'LEGACY' : gameType == 1 ? 'DEFAULT' : 'FLAT'}`;
+        properties = properties.replace(`server-port=${serverProperties["server-port"]}`, `server-port=${this.info.serverProperties.portv4}`);
+        properties = properties.replace(`server-portv6=${serverProperties["server-portv6"]}`, `server-portv6=${this.info.serverProperties.portv6}`);
+        let generator = this.info.Generator;
+        properties += `level-type=${generator == 0 ? 'LEGACY' : generator == 1 ? 'DEFAULT' : 'FLAT'}`;
 
         writeFileSync(`server.properties`, properties);
     }
@@ -180,16 +169,16 @@ export class WorldData {
     [index: string]: any;
     //WORLD INFO
     LevelName: string = "";
-    GameType: number = 1; //0=LEGACY 1=DEFAULT 2=FLAT
-    RandomSeed: number = 0;
-    severProperties: Properties = {
+    Generator: number = 1; //0=LEGACY 1=DEFAULT 2=FLAT
+    RandomSeed: string = "0";
+    serverProperties: Properties = {
         portv4: 19132, //set to our default port +2*WorldProccesses
         portv6: 19133
     };
     FlatWorldLayers: WorldLayers;
 
     //CHEATS
-    cheatsEnabled: boolean = true;
+    cheatsEnabled: boolean = false;
     commandblockoutput: boolean = true;
     commandblocksenabled: boolean = true;
     commandsEnabled: boolean = true;
