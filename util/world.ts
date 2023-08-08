@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync } from "fs";
 import { serverProperties } from "bdsx/serverproperties";
 import { bedrockServer } from "bdsx/launcher";
 import { WorldNBT } from "./worldNBT";
+import { DEFAULT_DAT_FILE, addPort, removePort } from "./fileSystem";
 
 async function stopWorlds(): Promise<void> {
     for(let i = 0; i < levels.length; i++){
@@ -84,6 +85,7 @@ export class World {
                 data = data.toString().split('\n');
                 data.pop();
                 data.forEach((str: string) => {
+                    str = str.replace('NO LOG FILE! - ', '');
                     SystemLog(`[${this.info.LevelName.magenta}] ` + str, SystemLogType.OTHER);
                 });
             };
@@ -110,6 +112,7 @@ export class World {
                 SystemLog(`[${this.info.LevelName.magenta}] World closed with exit code ` + code);
                 this.running = false;
                 runningWorlds--;
+                removePort(this.info.serverProperties.portv4);
                 resolve();
             });
         });
@@ -120,8 +123,10 @@ export class World {
             this.bat.stdout.on('data', (data) => {
                 if(data.toString().includes('Server started')) {
                     SystemLog(`Started world ${this.info.LevelName}`, SystemLogType.LOG);
+                    writeFileSync('server.properties', readFileSync('ExtraWorlds/serverPropBackup.properties'));
                     this.running = true;
                     runningWorlds++;
+                    addPort(this.info.LevelName, this.info.serverProperties.portv4);
                     resolve();
                 }
             })
@@ -129,9 +134,7 @@ export class World {
     }
 
     async setWorldData() {
-        const LEVEL_DAT = '../plugins/extraworlds/data/DEFAULT.dat';
-
-        let worldNBT = new WorldNBT(readFileSync(LEVEL_DAT));
+        const worldNBT = new WorldNBT(readFileSync(DEFAULT_DAT_FILE));
 
         let data = worldNBT.worldDat[""].data;
 
@@ -152,9 +155,13 @@ export class World {
             }
         }
 
+        console.log(worldNBT.worldDat[""].data.FlatWorldLayers)
+
         worldNBT.writeWorld();
 
         let properties = readFileSync('ExtraWorlds/serverPropBackup.properties').toString();
+        //add gamemode/difficulty
+        properties = properties.replace(`allow-cheats=${serverProperties["allow-cheats"]}`, `allow-cheats=${this.info.cheatsEnabled}`);
         properties = properties.replace(`level-name=${serverProperties["level-name"]}`, `level-name=${this.info.LevelName}`);
         properties = properties.replace(`server-port=${serverProperties["server-port"]}`, `server-port=${this.info.serverProperties.portv4}`);
         properties = properties.replace(`server-portv6=${serverProperties["server-portv6"]}`, `server-portv6=${this.info.serverProperties.portv6}`);
@@ -175,7 +182,7 @@ export class WorldData {
         portv4: 19132, //set to our default port +2*WorldProccesses
         portv6: 19133
     };
-    FlatWorldLayers: WorldLayers;
+    FlatWorldLayers: string = new WorldLayers().toString();
 
     //CHEATS
     cheatsEnabled: boolean = false;
@@ -266,6 +273,12 @@ export class WorldLayers {
             new BlockLayer('minecraft:dirt', 2),
             new BlockLayer('minecraft:grass', 1)
         ]
+    }
+
+    toString() {
+        let str = '';
+        this.blocks.forEach((val)=>str += `{"block_name":"${val.blockID}","count":${val.count}}`);
+        return `{"biome_id:1","block_layers":[${str}],"encoding_version":6,"structure_options":null,"world_version":"version.post_1_18"}`
     }
 }
 

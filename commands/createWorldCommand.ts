@@ -2,9 +2,9 @@ import { CommandPermissionLevel } from "bdsx/bds/command";
 import { ServerPlayer } from "bdsx/bds/player";
 import { command } from "bdsx/command";
 import { SystemLog, SystemLogType } from "../util/system";
-import { Experiments, World, WorldData, levels } from "../util/world";
+import { BlockLayer, Experiments, World, WorldData, WorldLayers, levels } from "../util/world";
 import { BLOCKSETTINGS_FORM, CREATEWORLD_FORM, EXPERIMENTS_FORM, MOBSETTINGS_FORM, PLAYERSETTINGS_FORM, WORLDCHEATS_FORM, WORLDINFO_FORM, WORLDMENU_FORM, WORLDSETTINGS_FORM, getFormData } from "../forms/worldForms";
-import { CustomForm, FormButton, FormDropdown, FormInput, FormStepSlider, FormToggle, SimpleForm } from "bdsx/bds/form";
+import { CustomForm, FormDropdown, FormInput, FormStepSlider, FormToggle, SimpleForm } from "bdsx/bds/form";
 import { NetworkIdentifier } from "bdsx/bds/networkidentifier";
 import { setProperty } from "../util/fileSystem";
 
@@ -18,17 +18,16 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
     CREATEWORLD_FORM.sendTo(player.getNetworkIdentifier(), async (form, net) => {
         let world = new World();
 
-        // Get world info and set it
-        const worldInfo = await getFormData(WORLDINFO_FORM, net);
-
-        world.info.LevelName = worldInfo[0];
-        world.info.serverProperties.portv4 = Number(worldInfo[1]);
-        world.info.serverProperties.portv6 = Number(worldInfo[2]);
-
         // Set game type (what kind of world)
         switch(form.response) {
             case "f":
+                world.info.Generator = 2;
+                break;
             case "v":
+                let layers = new WorldLayers();
+                layers.blocks = [];
+                layers.blocks[0] = new BlockLayer('minecraft:air',1);
+                world.info.FlatWorldLayers = layers.toString();
                 world.info.Generator = 2;
                 break;
             case "d":
@@ -39,14 +38,22 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
                 break;
         };
 
-        // Change the menu form to add superflat settings if needed and sent to player
+        // Get world info and set it
+        const worldInfo = await getFormData(WORLDINFO_FORM, net);
+
+        world.info.LevelName = worldInfo[0];
+        world.info.serverProperties.portv4 = Number(worldInfo[1]);
+        world.info.serverProperties.portv6 = Number(worldInfo[2]);
+
         const newWorld = await worldMenu(world, net);
         if(!newWorld) return console.log('canceled');
+
+        console.log(newWorld.info.FlatWorldLayers)
 
         await newWorld.startWorld();
         levels.push(newWorld);
 
-        net.getActor()?.transferServer('127.0.0.1', 19134)
+        net.getActor()?.transferServer('127.0.0.1', newWorld.info.serverProperties.portv4);
     })
 },{})
 
@@ -57,7 +64,7 @@ async function worldMenu(w: World, player: NetworkIdentifier): Promise<World | n
 
     // TODO: Fix for void worlds since we dont want settings for it
     const new_form = WORLDMENU_FORM;
-    if(w.info.Generator == 2) new_form.addButton(new FormButton("Super Flat Settings"), "f");
+    //if(w.info.Generator == 2) new_form.addButton(new FormButton("Super Flat Settings"), "f");
     const response = await getFormData(new_form, player);
 
     switch(response) {
@@ -220,6 +227,9 @@ async function worldMenu(w: World, player: NetworkIdentifier): Promise<World | n
 
         // Super Flat Settings
         case "f":
+            const layers: string = (await getFlatWorldLayers(new WorldLayers(), player)).toString();
+            w.info.FlatWorldLayers = layers;
+
             val = await worldMenu(world, player);
             if(!val) break;
             return val;
@@ -230,4 +240,12 @@ async function worldMenu(w: World, player: NetworkIdentifier): Promise<World | n
     }
 
     return null;
+}
+
+async function getFlatWorldLayers(layers: WorldLayers, player: NetworkIdentifier): Promise<WorldLayers> {
+    layers.blocks = [];
+
+
+
+    return new WorldLayers();
 }

@@ -1,10 +1,9 @@
 import { events } from "bdsx/event";
-import { command } from "bdsx/command"
-import { ServerPlayer } from "bdsx/bds/player";
 import { SystemLog, SystemLogType } from "./util/system";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { serverProperties } from "bdsx/serverproperties";
 import { World, levels, takenPortv4 } from "./util/world";
+import { addPort, updateWorlds } from "./util/fileSystem";
 
 export let isMainFile: boolean;
 export let ServerData = {};
@@ -16,8 +15,8 @@ events.serverOpen.on(()=>{
 
     //Load plugin data
     if(!existsSync('ExtraWorlds/extraworlds.properties')) {
-        mkdirSync('ExtraWorlds');
-        writeFileSync('ExtraWorlds/extraworlds.properties','#Tells the plugin if it\'s a main plugin or a non-main plugin\nmainInstanceRunning=true');
+        try{mkdirSync('ExtraWorlds');}catch{};
+        writeFileSync('ExtraWorlds/extraworlds.properties','#Tells the plugin if it\'s a main plugin or a non-main plugin\nmainInstanceRunning=true\n#List of all the worlds on the server\nworldList=[]\n#List of indexs that correspond with the port list to tell what port belongs to which world name\nindexList=[]\n#List of active ports for worlds\nportList=[]');
         isMainFile = true;
     } else {
         let data = readFileSync('ExtraWorlds/extraworlds.properties');
@@ -30,19 +29,8 @@ events.serverOpen.on(()=>{
         }
     }
 
-    //Save backup server data
-    if(isMainFile) {
-        let data = readFileSync('server.properties');
-        writeFileSync('ExtraWorlds/serverPropBackup.properties', data);
-        takenPortv4.push(Number(serverProperties["server-port"]));
-        const w = new World();
-        w.running = true;
-        w.skip = true;
-        w.info.LevelName = serverProperties['level-name'];
-        levels.push(w);
-    }
-
     SystemLog(`Plugin is main: ${isMainFile}`, SystemLogType.WARN);
+    if(isMainFile) setupData();
 
     require('./commands/commandRegistry');
 });
@@ -51,3 +39,24 @@ events.serverClose.on(()=>{
     SystemLog("Plugin Stopped", SystemLogType.LOG);
 });
 
+
+//Data setup stuff
+function setupData(): void {
+    SystemLog(`Setting up data...`, SystemLogType.WARN);
+
+    //Save server properties
+    let data = readFileSync('server.properties');
+    writeFileSync('ExtraWorlds/serverPropBackup.properties', data);
+
+    //Update Worlds
+    updateWorlds();
+
+    //Add a fake world
+    takenPortv4.push(Number(serverProperties["server-port"]));
+    const w = new World();
+    w.running = true;
+    w.skip = true;
+    w.info.LevelName = serverProperties['level-name'];
+    levels.push(w);
+    addPort(w.info.LevelName, w.info.serverProperties.portv4);
+}
