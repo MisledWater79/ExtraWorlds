@@ -6,6 +6,8 @@ This plugin is based off of [MultiWorlds](https://github.com/salasxd/multiworlds
 
 🟢 The ability to make Legacy/Infinite/Flat/Void worlds
 
+🔴 The ability to work on custom IPs (I know it's pretty sad but I do plan on getting this done asap)
+
 🔴 World specific addons and packs
 
 🔴 Transfer data accross worlds such as player data or other data
@@ -47,3 +49,16 @@ An admin only command that allows you to start/stop/edit worlds
 ## 🔴 /world
 
 Another admin only command that will provide most, if not, all world data you want.
+
+# How to install
+
+It's pretty simple to install, just open up a command prompt in you server folder and run `npm i @bdsx/extraworlds` It's that easy! ExtraWorlds will do all the set up.
+
+### The following is not emplimented yet
+
+Now I did say that there is no setup, and that is true, unless you are port fowarding to a custom IP. For this there will be a bit of setup and you can follow these steps:
+
+1. Add `custom-ip=play.myserver.net` to your `server.properties` file
+2. Depending on how many worlds you run, you'll need to port forward twice as many ports from the 19132 port. For example, if I had 3 worlds then I would open up ports 19132 to 19137.
+
+That's it for setup, if you need any help at all with this you can contact me on discord `@misledwater79` and i'll try to respond asap.
