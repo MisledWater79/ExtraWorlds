@@ -7,6 +7,7 @@ import { BLOCKSETTINGS_FORM, CREATEWORLD_FORM, EXPERIMENTS_FORM, MOBSETTINGS_FOR
 import { CustomForm, FormDropdown, FormInput, FormStepSlider, FormToggle, SimpleForm } from "bdsx/bds/form";
 import { NetworkIdentifier } from "bdsx/bds/networkidentifier";
 import { setProperty } from "../util/fileSystem";
+import { readdirSync } from "fs";
 
 SystemLog(`Registering createworld command`, SystemLogType.DEBUG);
 
@@ -40,6 +41,8 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
 
         // Get world info and set it
         const worldInfo = await getFormData(WORLDINFO_FORM, net);
+
+        if(readdirSync('worlds', { withFileTypes: true }).filter(dirent => dirent.isDirectory()).map(dirent => dirent.name).includes(worldInfo[0])) return player.sendMessage('World cannot have same names');
 
         world.info.LevelName = worldInfo[0];
         world.info.serverProperties.portv4 = Number(worldInfo[1]);
