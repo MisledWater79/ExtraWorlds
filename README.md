@@ -22,7 +22,8 @@ This plugin is based off of [MultiWorlds](https://github.com/salasxd/multiworlds
 
 > 🟢 Will be in first release
 
-# Commands
+<details>
+<summary><h1>Commands</h1></summary>
 
 We won't have many commands since there's not much for commands, but here is a list of them anyway
 
@@ -49,6 +50,8 @@ An admin only command that allows you to start/stop/edit worlds
 ## 🔴 /world
 
 Another admin only command that will provide most, if not, all world data you want.
+
+</details>
 
 # How to install
 
