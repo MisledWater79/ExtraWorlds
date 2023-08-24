@@ -8,6 +8,7 @@ import { CustomForm, FormDropdown, FormInput, FormStepSlider, FormToggle, Simple
 import { NetworkIdentifier } from "bdsx/bds/networkidentifier";
 import { setProperty } from "../util/fileSystem";
 import { readdirSync } from "fs";
+import { serverIP } from "..";
 
 SystemLog(`Registering createworld command`, SystemLogType.DEBUG);
 
@@ -56,7 +57,7 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
         await newWorld.startWorld();
         levels.push(newWorld);
 
-        net.getActor()?.transferServer('127.0.0.1', newWorld.info.serverProperties.portv4);
+        net.getActor()?.transferServer(serverIP, newWorld.info.serverProperties.portv4);
     })
 },{})
 

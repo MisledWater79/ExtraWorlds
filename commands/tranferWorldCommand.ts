@@ -6,7 +6,7 @@ import { CxxString } from "bdsx/nativetype";
 import { readFileSync } from "fs";
 import { getFormData } from "../forms/worldForms";
 import { SystemLog, SystemLogType } from "../util/system";
-import { levels } from "../util/world";
+import { serverIP } from "..";
 
 command.register("transfer", "Creates a brand new world!", CommandPermissionLevel.Normal)
 .overload(async (param, origin, output) => {
@@ -36,7 +36,7 @@ command.register("transfer", "Creates a brand new world!", CommandPermissionLeve
 
     let port = portList[indexList.indexOf(index)];
 
-    player.transferServer('127.0.0.1', port);
+    player.transferServer(serverIP, port);
 }, {
     name: [CxxString, true]
 });

@@ -6,6 +6,7 @@ import { World, levels, takenPortv4 } from "./util/world";
 import { addPort, updateWorlds } from "./util/fileSystem";
 
 export let isMainFile: boolean;
+export let serverIP: string = '127.0.0.1';
 export let ServerData = {};
 
 SystemLog("Plugin Allocated", SystemLogType.LOG);
@@ -28,6 +29,11 @@ events.serverOpen.on(()=>{
             SystemLog('Extraworld.properties file has no "mainInstanceRunning" property. Contact developer about this error.', SystemLogType.ERROR);
         }
     }
+
+    if(existsSync('server.properties'))
+        serverIP = readFileSync('server.properties').toString().match('/custom-ip=(.*?)(?:\r?\n|$)/g')?.[0] || '127.0.0.1';
+    else
+        SystemLog('Server.properties file doesn\'t exist? Can\'t get custom ip if one exists.', SystemLogType.ERROR);
 
     SystemLog(`Plugin is main: ${isMainFile}`, SystemLogType.WARN);
     if(isMainFile) setupData();
