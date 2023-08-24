@@ -53,6 +53,12 @@ Another admin only command that will provide most, if not, all world data you wa
 
 </details>
 
+# Some more info
+
+Flat world's use server side chunk generation, which might cause lag with many players, would be best to limit the render distance. This will be togglable in world settings but will be on by default. This is because clients can't generate custom superflats. I have made a bug report for this and it is still in review, I will update this as soon as I can when it's fixed.
+
+From testing, it seems each world will take up another 0.5GB of memory. This doesn't account for multiple people on at once, so it's expected that it will take up even more. I have a plan for smart worlds that will close after a while but that won't be til after first release.
+
 # How to install
 
 It's pretty simple to install, just open up a command prompt in you server folder and run `npm i @bdsx/extraworlds` It's that easy! ExtraWorlds will do all the set up.
