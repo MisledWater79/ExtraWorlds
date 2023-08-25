@@ -16,10 +16,12 @@ events.serverOpen.on(()=>{
 
     //Load plugin data
     if(!existsSync('ExtraWorlds/extraworlds.properties')) {
+        //Make it if it don't exist
         try{mkdirSync('ExtraWorlds');}catch{};
         writeFileSync('ExtraWorlds/extraworlds.properties','#Tells the plugin if it\'s a main plugin or a non-main plugin\nmainInstanceRunning=true\n#List of all the worlds on the server\nworldList=[]\n#List of indexs that correspond with the port list to tell what port belongs to which world name\nindexList=[]\n#List of active ports for worlds\nportList=[]');
         isMainFile = true;
     } else {
+        //Read plugin data and save it
         let data = readFileSync('ExtraWorlds/extraworlds.properties');
         if(data.includes('mainInstanceRunning=true')) isMainFile = false;
         else if(data.includes('mainInstanceRunning=false')) {
@@ -30,10 +32,11 @@ events.serverOpen.on(()=>{
         }
     }
 
-    if(existsSync('server.properties'))
-        serverIP = readFileSync('server.properties').toString().match('/custom-ip=(.*?)(?:\r?\n|$)/g')?.[0] || '127.0.0.1';
-    else
-        SystemLog('Server.properties file doesn\'t exist? Can\'t get custom ip if one exists.', SystemLogType.ERROR);
+    //Get custom-ip
+    if(existsSync('server.properties')) serverIP = readFileSync('server.properties').toString().match(/custom-ip=(.*?)(?=$)/g)?.[0].replace('custom-ip=','') || '127.0.0.1';
+    else SystemLog('Server.properties file doesn\'t exist? Can\'t get custom ip if one exists.', SystemLogType.ERROR);
+
+    SystemLog(`Server is running with custom-ip of ${serverIP}`, SystemLogType.WARN);
 
     SystemLog(`Plugin is main: ${isMainFile}`, SystemLogType.WARN);
     if(isMainFile) setupData();
