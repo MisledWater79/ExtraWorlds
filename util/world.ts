@@ -20,7 +20,7 @@ async function stopWorlds(): Promise<void> {
 //Overrides the stop command to wait till all instances are closed
 events.command.on((command, originName, ctx)=>{
     if(!isMainFile) return;
-    if(command == '/stop') {
+    if(command.toLowerCase() == '/stop') {
         stopWorlds().then(()=>{
             let data = readFileSync('ExtraWorlds/extraworlds.properties');
             writeFileSync('ExtraWorlds/extraworlds.properties', data.toString().replace('mainInstanceRunning=true', 'mainInstanceRunning=false'))
@@ -34,7 +34,6 @@ events.command.on((command, originName, ctx)=>{
 
 export let levels: World[] = [];
 export let takenPortv4: number[] = [];
-export let runningWorlds: number = 1;
 
 // TODO: Stop at port 19200 as to not have so many
 
@@ -46,6 +45,12 @@ export function getNextPortv4(): number {
         else found = true;
     };
     return port;
+}
+
+export function getWorldIndex(name: string): number {
+    let i = -1;
+    levels.forEach((w, index) => {w.info.LevelName == name ? i = index : 0})
+    return i;
 }
 
 export function isWorldRunning(name: string): boolean {
@@ -66,7 +71,7 @@ export class World {
     //constructor(levelName: string, )
 
     async startWorld(): Promise<void> {
-        if(this.bat || this.info.LevelName == serverProperties['level-name'] || isWorldRunning(this.info.LevelName)) {
+        if(this.info.LevelName == serverProperties['level-name'] || isWorldRunning(this.info.LevelName)) {
             SystemLog(`Cannot start world ${this.info.LevelName} because world is already running.`);
         } else {
             if(takenPortv4.includes(this.info.serverProperties.portv4)) {
@@ -111,7 +116,6 @@ export class World {
             this.bat.on('close', (code) => {
                 SystemLog(`[${this.info.LevelName.magenta}] World closed with exit code ` + code);
                 this.running = false;
-                runningWorlds--;
                 removePort(this.info.serverProperties.portv4);
                 resolve();
             });
@@ -125,7 +129,6 @@ export class World {
                     SystemLog(`Started world ${this.info.LevelName}`, SystemLogType.LOG);
                     writeFileSync('server.properties', readFileSync('ExtraWorlds/serverPropBackup.properties'));
                     this.running = true;
-                    runningWorlds++;
                     addPort(this.info.LevelName, this.info.serverProperties.portv4);
                     resolve();
                 }
@@ -155,8 +158,6 @@ export class World {
             }
         }
 
-        console.log(worldNBT.worldDat[""].data.FlatWorldLayers)
-
         worldNBT.writeWorld();
 
         let properties = readFileSync('ExtraWorlds/serverPropBackup.properties').toString();
@@ -166,7 +167,7 @@ export class World {
         properties = properties.replace(`server-port=${serverProperties["server-port"]}`, `server-port=${this.info.serverProperties.portv4}`);
         properties = properties.replace(`server-portv6=${serverProperties["server-portv6"]}`, `server-portv6=${this.info.serverProperties.portv6}`);
         let generator = this.info.Generator;
-        properties += `level-type=${generator == 0 ? 'LEGACY' : generator == 1 ? 'DEFAULT' : 'FLAT'}`;
+        //properties += `level-type=${generator == 0 ? 'LEGACY' : generator == 1 ? 'DEFAULT' : 'FLAT'}`;
 
         writeFileSync(`server.properties`, properties);
     }
@@ -278,7 +279,7 @@ export class WorldLayers {
     toString() {
         let str = '';
         this.blocks.forEach((val)=>str += `{"block_name":"${val.blockID}","count":${val.count}}`);
-        return `{"biome_id:1","block_layers":[${str}],"encoding_version":6,"structure_options":null,"world_version":"version.post_1_18"}`
+        return `{"biome_id":1,"block_layers":[${str}],"encoding_version":6,"structure_options":null,"world_version":"version.post_1_18"}`
     }
 }
 

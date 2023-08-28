@@ -9,12 +9,13 @@ import { NetworkIdentifier } from "bdsx/bds/networkidentifier";
 import { setProperty } from "../util/fileSystem";
 import { readdirSync } from "fs";
 import { serverIP } from "..";
+import { WORLD_NOT_SAME_NAME } from "../util/texts";
 
 SystemLog(`Registering createworld command`, SystemLogType.DEBUG);
 
 command.register("createworld", "Creates a brand new world!", CommandPermissionLevel.Operator)
 .overload(async (param, origin, output) => {
-    if(origin.isServerCommandOrigin() || origin !instanceof ServerPlayer) return false;
+    if(origin.isServerCommandOrigin()) return;
     const player: ServerPlayer = <ServerPlayer>origin.getEntity();
 
     CREATEWORLD_FORM.sendTo(player.getNetworkIdentifier(), async (form, net) => {
@@ -27,8 +28,9 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
                 break;
             case "v":
                 let layers = new WorldLayers();
-                layers.blocks = [];
-                layers.blocks[0] = new BlockLayer('minecraft:air',1);
+                layers.blocks = [
+                    new BlockLayer('minecraft:air',1)
+                ];
                 world.info.FlatWorldLayers = layers.toString();
                 world.info.Generator = 2;
                 break;
@@ -38,21 +40,23 @@ command.register("createworld", "Creates a brand new world!", CommandPermissionL
             case "l":
                 world.info.Generator = 0;
                 break;
+            default:
+                return SystemLog('canceled create', SystemLogType.DEBUG);
         };
 
         // Get world info and set it
         const worldInfo = await getFormData(WORLDINFO_FORM, net);
 
-        if(readdirSync('worlds', { withFileTypes: true }).filter(dirent => dirent.isDirectory()).map(dirent => dirent.name).includes(worldInfo[0])) return player.sendMessage('World cannot have same names');
+        if(!worldInfo) return SystemLog('canceled info', SystemLogType.DEBUG);
+
+        if(readdirSync('worlds', { withFileTypes: true }).filter(dirent => dirent.isDirectory()).map(dirent => dirent.name).includes(worldInfo[0])) return player.sendMessage(WORLD_NOT_SAME_NAME);
 
         world.info.LevelName = worldInfo[0];
         world.info.serverProperties.portv4 = Number(worldInfo[1]);
         world.info.serverProperties.portv6 = Number(worldInfo[2]);
 
         const newWorld = await worldMenu(world, net);
-        if(!newWorld) return console.log('canceled');
-
-        console.log(newWorld.info.FlatWorldLayers)
+        if(!newWorld) return SystemLog('canceled settings', SystemLogType.DEBUG);
 
         await newWorld.startWorld();
         levels.push(newWorld);

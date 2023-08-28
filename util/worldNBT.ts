@@ -187,7 +187,7 @@ export class WorldNBT {
         try {
             mkdirSync(`worlds/${this.worldDat[""].data.LevelName.data}`);
         } catch {};
-
+        writeFileSync(`worlds/${this.worldDat[""].data.LevelName.data}/l.dat`, this.view);
         writeFileSync(`worlds/${this.worldDat[""].data.LevelName.data}/level.dat`, this.view);
     }
 
@@ -309,7 +309,7 @@ export class WorldNBT {
                     this.setList(compound[key].data, 1);
                     break;
                 case 8:
-                    this.setString(compound[key].data, (key == 'LevelName' /*|| key == 'FlatWorldLayers*/) ? true : false);
+                    this.setString(compound[key].data, (key == 'LevelName' || key == 'FlatWorldLayers') ? true : false);
                     break;
                 case 9:
                     this.setList(compound[key].data, compound[key].dataType);

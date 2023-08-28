@@ -2,10 +2,9 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import { cwd } from "process";
 import { SystemLog, SystemLogType } from "./system";
+import { World } from "./world";
 
 export const DEFAULT_DAT_FILE = join(cwd(), '../node_modules/@bdsx/extraworlds/data/DEFAULT.dat');
-//Not really needed
-const VOID_DAT_FILE = join(cwd(), '../node_modules/@bdsx/extraworlds/data/VOID.dat');
 const EXTRAWORLDS_PROPERTIES = join(cwd(), 'ExtraWorlds/extraworlds.properties');
 
 let pwl: string[] = [];
@@ -91,6 +90,17 @@ export function updateWorlds(): void {
     worldList = readdirSync('worlds', { withFileTypes: true }).filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
 
     setPropertyData();
+
+    //TODO: Add worlds and their data to levels
+    worldList.forEach((name) => {
+        const w = new World();
+        w.info.LevelName = name;
+        loadWorldData(w);
+    })
+}
+
+export function loadWorldData(world: World) {
+
 }
 
 /*
@@ -101,13 +111,3 @@ export function updateWorlds(): void {
 export function setProperty<T, K extends keyof T>(obj: T, key: K, value: T[K]): void {
     obj[key] = value;
 }
-
-async function loadFile(fileType: FileType,) {
-    switch(fileType) {
-        case 0:
-            if(existsSync('ExtraWorlds'))
-            readFileSync(join(cwd(), ))
-    }
-}
-
-async function saveFile(fileType: FileType,){}

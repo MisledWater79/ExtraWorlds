@@ -7,6 +7,9 @@ import { readFileSync } from "fs";
 import { getFormData } from "../forms/worldForms";
 import { SystemLog, SystemLogType } from "../util/system";
 import { serverIP } from "..";
+import { NO_WORLD_DATA, WORLD_IS_DEACTIVE } from "../util/texts";
+
+SystemLog(`Registering transfer command`, SystemLogType.DEBUG);
 
 command.register("transfer", "Creates a brand new world!", CommandPermissionLevel.Normal)
 .overload(async (param, origin, output) => {
@@ -19,7 +22,7 @@ command.register("transfer", "Creates a brand new world!", CommandPermissionLeve
 
     //Show world form
     const lists = dat.match(/".*?"(?=]|$)/g);
-    if(lists == undefined) return SystemLog('No world data in extraWorlds.properties', SystemLogType.ERROR);
+    if(lists == undefined) return SystemLog(NO_WORLD_DATA, SystemLogType.ERROR);
 
     const worldList = lists[0].split('"').join('').split(',');
     const indexList = lists[1].split('"').join('').split(',').map((val)=>Number(val));
@@ -32,7 +35,7 @@ command.register("transfer", "Creates a brand new world!", CommandPermissionLeve
     if(index == null) return;
 
     //TODO: run world?
-    if(indexList.indexOf(index) == -1) return player.sendMessage('World is not active');
+    if(indexList.indexOf(index) == -1) return player.sendMessage(WORLD_IS_DEACTIVE);
 
     let port = portList[indexList.indexOf(index)];
 
