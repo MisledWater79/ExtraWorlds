@@ -100,7 +100,7 @@ export function updateWorlds(): void {
 }
 
 export function loadWorldData(world: World) {
-
+    console.log(existsSync(`worlds/${world.info.LevelName}/level.dat`))
 }
 
 /*

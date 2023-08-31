@@ -161,13 +161,11 @@ export class World {
         worldNBT.writeWorld();
 
         let properties = readFileSync('ExtraWorlds/serverPropBackup.properties').toString();
-        //add gamemode/difficulty
+        //TODO: add gamemode/difficulty
         properties = properties.replace(`allow-cheats=${serverProperties["allow-cheats"]}`, `allow-cheats=${this.info.cheatsEnabled}`);
         properties = properties.replace(`level-name=${serverProperties["level-name"]}`, `level-name=${this.info.LevelName}`);
         properties = properties.replace(`server-port=${serverProperties["server-port"]}`, `server-port=${this.info.serverProperties.portv4}`);
         properties = properties.replace(`server-portv6=${serverProperties["server-portv6"]}`, `server-portv6=${this.info.serverProperties.portv6}`);
-        let generator = this.info.Generator;
-        //properties += `level-type=${generator == 0 ? 'LEGACY' : generator == 1 ? 'DEFAULT' : 'FLAT'}`;
 
         writeFileSync(`server.properties`, properties);
     }
