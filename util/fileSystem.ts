@@ -1,8 +1,9 @@
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "fs";
+import { existsSync, read, readFileSync, readdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import { cwd } from "process";
 import { SystemLog, SystemLogType } from "./system";
-import { World } from "./world";
+import { World, levels } from "./world";
+import { WorldNBT } from "./worldNBT";
 
 export const DEFAULT_DAT_FILE = join(cwd(), '../node_modules/@bdsx/extraworlds/data/DEFAULT.dat');
 const EXTRAWORLDS_PROPERTIES = join(cwd(), 'ExtraWorlds/extraworlds.properties');
@@ -100,7 +101,30 @@ export function updateWorlds(): void {
 }
 
 export function loadWorldData(world: World) {
-    console.log(existsSync(`worlds/${world.info.LevelName}/level.dat`))
+    if(!existsSync(`worlds/${world.info.LevelName}/level.dat`)) return SystemLog(`Level.dat not found for world: ${world.info.LevelName}`, SystemLogType.ERROR);
+
+    const dat = new WorldNBT(readFileSync(`worlds/${world.info.LevelName}/level.dat`)).worldDat[""].data;
+
+    for(const key in dat.experiments.data) {
+        if(!world.info[key]) continue;
+        world.info.experiments[key] = dat.experiments.data[key].data;
+    }
+
+    for(const key in dat){
+        if(dat[key].type == 10) continue;
+        if(!world.info[key]) continue;
+        switch(dat[key].type) {
+            case 1:
+                world.info[key] = Boolean(dat[key].data);
+                break;
+            default:
+                world.info[key] = dat[key].data;
+                break;
+        }
+    }
+
+    console.log(JSON.stringify(world.info));
+    levels.push(world);
 }
 
 /*
