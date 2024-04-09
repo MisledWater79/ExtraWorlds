@@ -9,9 +9,9 @@ import { SystemLog, SystemLogType } from "../util/system";
 import { serverIP } from "..";
 import { NO_WORLD_DATA, WORLD_IS_DEACTIVE } from "../util/texts";
 
-SystemLog(`Registering transfer command`, SystemLogType.DEBUG);
+SystemLog(`Registering transferWorld command`, SystemLogType.DEBUG);
 
-command.register("transfer", "Creates a brand new world!", CommandPermissionLevel.Normal)
+command.register("transferWorld", "Creates a brand new world!", CommandPermissionLevel.Normal)
 .overload(async (param, origin, output) => {
     const player = <ServerPlayer>origin.getEntity();
     const dat = readFileSync('ExtraWorlds/extraworlds.properties').toString();
